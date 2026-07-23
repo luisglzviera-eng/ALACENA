@@ -1,0 +1,12 @@
+{
+  "name": "Alacena",
+  "short_name": "Alacena",
+  "description": "Lista del súper, menú, recetas y control de gastos del hogar.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F2F5EE",
+  "theme_color": "#22392C",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

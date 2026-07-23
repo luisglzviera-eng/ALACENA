@@ -1,0 +1,13 @@
+export const CATEGORIES=['Frutas y verduras','Carnes y pescado','Lácteos y huevos','Despensa','Limpieza y hogar','Otros'] as const;
+export type Category=typeof CATEGORIES[number];
+export type GroceryItem={id:string;text:string;category:Category;checked:boolean;source:string;quantity?:number|null;unit?:string|null;created_at:string};
+export type Recipe={id:string;name:string;ingredients:string[];notes:string;tags:string[];prep_minutes?:number|null;servings?:number|null;favorite?:boolean;nutrition?:Nutrition|null;created_at:string};
+export type Nutrition={calories?:number;protein_g?:number;carbs_g?:number;fat_g?:number;fiber_g?:number};
+export type MenuDays=Record<string,{lunch:string;dinner:string}>;
+export type MenuWeek={id:string;label:string;week_start:string;days:MenuDays;archived:boolean;created_at:string};
+export type PurchaseItem={id?:string;purchase_id?:string;name:string;category:Category;quantity:number|null;unit_price:number|null;total_price:number};
+export type Purchase={id:string;store:string;purchase_date:string;image_path:string|null;total:number;status:string;created_at:string;purchase_items?:PurchaseItem[]};
+export type Preferences={id:number;diet_user:string;diet_partner:string;kids_recipes:boolean;budget_priority:boolean;monthly_budget:number;notifications_enabled:boolean;updated_at?:string};
+export type PantryItem={id:string;name:string;category:Category;quantity:number;unit:string;expires_on:string|null;low_stock_at:number;barcode?:string|null;created_at:string;updated_at?:string};
+export type RecurringItem={id:string;text:string;category:Category;quantity:number;unit:string;frequency:string;next_due:string;active:boolean;created_at:string};
+export type Leftover={id:string;name:string;quantity:string;expires_on:string|null;created_at:string};
