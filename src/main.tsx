@@ -1,30 +1,22 @@
-import '@fontsource/inter/400.css';
-import '@fontsource/inter/500.css';
-import '@fontsource/inter/600.css';
-import '@fontsource/inter/700.css';
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import '@fontsource/manrope/400.css';
-import '@fontsource/manrope/500.css';
-import '@fontsource/manrope/600.css';
-import '@fontsource/manrope/700.css';
+import App from "./App";
+import { AppProvider } from "./context/AppContext";
+import "./styles.css";
 
-import '@fontsource/dm-serif-display';
+const queryClient = new QueryClient();
+const root = document.getElementById("root");
 
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+if (!root) {
+  throw new Error("No se encontró el elemento raíz de Alacena.");
+}
 
-import { AppProvider } from './context/AppContext';
-import App from './App';
-
-import './styles.css';
-
-const client = new QueryClient();
-
-createRoot(document.getElementById('root')!).render(
+createRoot(root).render(
   <StrictMode>
-    <QueryClientProvider client={client}>
+    <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AppProvider>
           <App />
@@ -34,8 +26,8 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>
 );
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
   });
 }

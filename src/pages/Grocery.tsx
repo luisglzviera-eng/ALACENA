@@ -1,1 +1,73 @@
-import{useState}from'react';import{Mic,Plus,RefreshCw,Trash2,WandSparkles}from'lucide-react';import{useApp}from'../context/AppContext';import{CATEGORIES,type Category}from'../types';import{DemoBanner,Empty,Page}from'../components/UI';export default function Grocery(){const{configured,groceries,addGrocery,toggleGrocery,deleteGrocery,clearChecked,generateSmartList,runRecurring}=useApp();const[text,setText]=useState(''),[category,setCategory]=useState<Category>('Frutas y verduras'),[quantity,setQuantity]=useState(1),[unit,setUnit]=useState('pza');const submit=async(e:React.FormEvent)=>{e.preventDefault();if(!text.trim())return;await addGrocery(text.trim(),category,quantity,unit);setText('')};const voice=()=>{const SR=(window as any).SpeechRecognition||(window as any).webkitSpeechRecognition;if(!SR)return alert('El dictado no está disponible en este navegador.');const r=new SR();r.lang='es-MX';r.onresult=async(e:any)=>{const phrase=e.results[0][0].transcript;for(const x of phrase.split(/,| y /).map((s:string)=>s.trim()).filter(Boolean))await addGrocery(x,category,1,'pza','voice')};r.start()};return <Page title="Lista del súper" subtitle={`${groceries.filter(x=>!x.checked).length} productos pendientes`} action={<button className="ghost danger" onClick={clearChecked}>Quitar marcados</button>}>{!configured&&<DemoBanner/>}<form className="add-row advanced" onSubmit={submit}><input value={text} onChange={e=>setText(e.target.value)} placeholder="Agregar producto…"/><select value={category} onChange={e=>setCategory(e.target.value as Category)}>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select><input className="qty" type="number" min=".01" step=".01" value={quantity} onChange={e=>setQuantity(+e.target.value)}/><input className="unit" value={unit} onChange={e=>setUnit(e.target.value)}/><button className="icon-btn" type="button" onClick={voice}><Mic/></button><button className="primary icon"><Plus/></button></form><div className="smart-tools"><button className="secondary" onClick={async()=>alert(`Se agregaron ${await generateSmartList()} faltantes del menú y productos bajos.`)}><WandSparkles size={17}/>Lista inteligente</button><button className="secondary" onClick={async()=>alert(`Se agregaron ${await runRecurring()} compras recurrentes.`)}><RefreshCw size={17}/>Compras habituales</button></div>{groceries.length===0?<Empty>Tu lista está vacía.</Empty>:CATEGORIES.map(cat=>{const items=groceries.filter(x=>x.category===cat);return items.length?<div className="category-block" key={cat}><h3>{cat}</h3>{items.map(item=><div className={`grocery-item ${item.checked?'checked':''}`} key={item.id}><label><input type="checkbox" checked={item.checked} onChange={e=>toggleGrocery(item.id,e.target.checked)}/><span>{item.text}<small>{item.quantity||1} {item.unit||'pza'} · {item.source}</small></span></label><button className="icon-btn" onClick={()=>deleteGrocery(item.id)}><Trash2 size={17}/></button></div>)}</div>:null})}</Page>}
+import GroceryForm from "../components/grocery/GroceryForm";
+import GroceryItem from "../components/grocery/GroceryItem";
+import GroceryToolbar from "../components/grocery/GroceryToolbar";
+import { DemoBanner, Empty, Page } from "../components/UI";
+import { useApp } from "../context/AppContext";
+import { CATEGORIES } from "../types";
+
+export default function Grocery() {
+  const {
+    configured,
+    groceries,
+    addGrocery,
+    toggleGrocery,
+    deleteGrocery,
+    clearChecked,
+    generateSmartList,
+    runRecurring,
+  } = useApp();
+
+  const pending = groceries.filter((item) => !item.checked).length;
+  const checked = groceries.length - pending;
+
+  return (
+    <Page
+      title="Lista del súper"
+      subtitle={`${pending} ${pending === 1 ? "producto pendiente" : "productos pendientes"}`}
+      action={
+        checked > 0 ? (
+          <button className="ghost danger" type="button" onClick={clearChecked}>
+            Quitar marcados
+          </button>
+        ) : undefined
+      }
+    >
+      {!configured && <DemoBanner />}
+      <GroceryForm onAdd={addGrocery} />
+      <GroceryToolbar
+        onGenerateSmartList={generateSmartList}
+        onRunRecurring={runRecurring}
+      />
+
+      {groceries.length === 0 ? (
+        <Empty>Tu lista está vacía. Agrega el primer producto.</Empty>
+      ) : (
+        <div className="grocery-groups">
+          {CATEGORIES.map((category) => {
+            const items = groceries.filter((item) => item.category === category);
+            if (!items.length) return null;
+
+            return (
+              <section className="category-block" key={category}>
+                <header>
+                  <h3>{category}</h3>
+                  <span>{items.length}</span>
+                </header>
+                <div className="category-items">
+                  {items.map((item) => (
+                    <GroceryItem
+                      key={item.id}
+                      item={item}
+                      onToggle={toggleGrocery}
+                      onDelete={deleteGrocery}
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+    </Page>
+  );
+}

@@ -1,232 +1,86 @@
-import {
-  NavLink,
-  Outlet,
-  useNavigate
-} from "react-router-dom";
-
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   BookOpen,
   ChartNoAxesColumn,
   ClipboardList,
   Home,
   LogOut,
-  Menu,
+  Menu as MenuIcon,
   ReceiptText,
   Settings,
   ShoppingBasket,
   Sparkles,
-  Warehouse
+  Warehouse,
 } from "lucide-react";
 
-import { supabase, isConfigured } from "../lib/supabase";
+import { isConfigured, supabase } from "../lib/supabase";
 
-const navigation = [
-  {
-    to: "/inicio",
-    label: "Inicio",
-    icon: Home
-  },
-  {
-    to: "/lista",
-    label: "Lista",
-    icon: ClipboardList
-  },
-  {
-    to: "/despensa",
-    label: "Despensa",
-    icon: Warehouse
-  },
-  {
-    to: "/menu",
-    label: "Menú",
-    icon: Menu
-  },
-  {
-    to: "/asistente",
-    label: "IA",
-    icon: Sparkles
-  }
-];
+const mainNavigation = [
+  ["/inicio", "Inicio", Home],
+  ["/lista", "Lista", ClipboardList],
+  ["/despensa", "Despensa", Warehouse],
+  ["/menu", "Menú", MenuIcon],
+  ["/asistente", "IA", Sparkles],
+] as const;
+
+const utilityNavigation = [
+  ["/recetas", "Recetas", BookOpen],
+  ["/tickets", "Tickets", ReceiptText],
+  ["/reportes", "Reportes", ChartNoAxesColumn],
+  ["/ajustes", "Ajustes", Settings],
+] as const;
 
 export default function Layout() {
-
   const navigate = useNavigate();
 
-  async function logout() {
+  async function signOut() {
     await supabase.auth.signOut();
     navigate("/login");
   }
 
   return (
-
     <div className="app-shell">
-
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-          background: "rgba(255,255,255,.90)",
-          backdropFilter: "blur(18px)",
-          borderBottom: "1px solid #E5E7EB",
-          padding: "18px 26px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center"
-        }}
-      >
-
-        <NavLink
-          to="/inicio"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            textDecoration: "none",
-            color: "#111827"
-          }}
-        >
-
-          <div
-            style={{
-              width: 46,
-              height: 46,
-              borderRadius: 14,
-              background: "#2563EB",
-              color: "white",
-              display: "grid",
-              placeItems: "center",
-              boxShadow: "0 10px 25px rgba(37,99,235,.30)"
-            }}
-          >
+      <header className="topbar">
+        <NavLink to="/inicio" className="brand">
+          <span className="brand-icon">
             <ShoppingBasket size={22} />
-          </div>
-
-          <div>
-
-            <h1
-              style={{
-                fontFamily: "DM Serif Display",
-                fontSize: 30,
-                margin: 0
-              }}
-            >
-              Alacena
-            </h1>
-
-            <div
-              style={{
-                color: "#6B7280",
-                fontSize: 13
-              }}
-            >
-              Organiza tu hogar
-            </div>
-
-          </div>
-
+          </span>
+          <span className="brand-copy">
+            <strong>Alacena</strong>
+            <small>Todo tu hogar en orden</small>
+          </span>
         </NavLink>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 10
-          }}
-        >
-
-          <NavLink to="/recetas">
-            <BookOpen />
-          </NavLink>
-
-          <NavLink to="/tickets">
-            <ReceiptText />
-          </NavLink>
-
-          <NavLink to="/reportes">
-            <ChartNoAxesColumn />
-          </NavLink>
-
-          <NavLink to="/ajustes">
-            <Settings />
-          </NavLink>
-
+        <nav className="header-actions" aria-label="Herramientas">
+          {utilityNavigation.map(([to, label, Icon]) => (
+            <NavLink key={to} to={to} className="icon-btn" aria-label={label}>
+              <Icon size={19} />
+            </NavLink>
+          ))}
           {isConfigured && (
-            <button
-              onClick={logout}
-              style={{
-                border: "none",
-                background: "transparent"
-              }}
-            >
-              <LogOut />
+            <button className="icon-btn" onClick={signOut} aria-label="Cerrar sesión">
+              <LogOut size={19} />
             </button>
           )}
-
-        </div>
-
+        </nav>
       </header>
 
-      <main
-        style={{
-          maxWidth: 1400,
-          margin: "40px auto",
-          padding: "0 28px"
-        }}
-      >
+      <main className="app-main">
         <Outlet />
       </main>
 
-      <nav
-        style={{
-          position: "fixed",
-          left: 20,
-          right: 20,
-          bottom: 20,
-          background: "white",
-          borderRadius: 22,
-          padding: 14,
-          display: "flex",
-          justifyContent: "space-around",
-          boxShadow: "0 18px 50px rgba(0,0,0,.12)",
-          border: "1px solid #E5E7EB"
-        }}
-      >
-
-        {navigation.map((item) => {
-
-          const Icon = item.icon;
-
-          return (
-
-            <NavLink
-              key={item.to}
-              to={item.to}
-              style={({ isActive }) => ({
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 6,
-                textDecoration: "none",
-                color: isActive ? "#2563EB" : "#6B7280",
-                fontSize: 12,
-                fontWeight: isActive ? 700 : 500
-              })}
-            >
-
-              <Icon size={22} />
-
-              {item.label}
-
-            </NavLink>
-
-          );
-
-        })}
-
+      <nav className="bottom-nav" aria-label="Navegación principal">
+        {mainNavigation.map(([to, label, Icon]) => (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            <Icon size={21} />
+            <span>{label}</span>
+          </NavLink>
+        ))}
       </nav>
-
     </div>
-
   );
-
 }
