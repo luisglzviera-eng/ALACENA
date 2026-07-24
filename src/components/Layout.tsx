@@ -1,32 +1,26 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  BookOpen,
   ChartNoAxesColumn,
+  ChefHat,
   Home,
   ListChecks,
   LogOut,
-  Menu as MenuIcon,
-  ReceiptText,
   Settings,
   ShoppingBasket,
   Sparkles,
-  Warehouse,
 } from 'lucide-react';
 import { isConfigured, supabase } from '../lib/supabase';
 
 const mainNav = [
   ['/inicio', 'Inicio', Home],
   ['/lista', 'Compras', ListChecks],
-  ['/despensa', 'Despensa', Warehouse],
-  ['/menu', 'Menú', MenuIcon],
-  ['/asistente', 'IA', Sparkles],
+  ['/cocina', 'Cocina', ChefHat],
+  ['/asistente', 'Alacena IA', Sparkles],
+  ['/ajustes', 'Perfil', Settings],
 ] as const;
 
-const utilityNav = [
-  ['/recetas', 'Recetas', BookOpen],
-  ['/tickets', 'Tickets', ReceiptText],
+const desktopExtras = [
   ['/reportes', 'Reportes', ChartNoAxesColumn],
-  ['/ajustes', 'Ajustes', Settings],
 ] as const;
 
 export default function Layout() {
@@ -46,20 +40,21 @@ export default function Layout() {
         </NavLink>
 
         <nav className="sidebar-nav">
-          <span className="nav-caption">PRINCIPAL</span>
+          <span className="nav-caption">TU HOGAR</span>
           {mainNav.map(([to, label, Icon]) => (
             <NavLink key={to} to={to} className={({ isActive }) => isActive ? 'active' : ''}>
               <Icon size={20} /><span>{label}</span>
             </NavLink>
           ))}
-          <span className="nav-caption">MÁS</span>
-          {utilityNav.map(([to, label, Icon]) => (
+          <span className="nav-caption">ANÁLISIS</span>
+          {desktopExtras.map(([to, label, Icon]) => (
             <NavLink key={to} to={to} className={({ isActive }) => isActive ? 'active' : ''}>
               <Icon size={20} /><span>{label}</span>
             </NavLink>
           ))}
         </nav>
 
+        <div className="sidebar-footnote">Diseñado para tu familia</div>
         {isConfigured && (
           <button className="sidebar-logout" onClick={logout}>
             <LogOut size={18} /> Cerrar sesión
@@ -73,16 +68,15 @@ export default function Layout() {
             <span className="brand-icon"><ShoppingBasket size={20} /></span>
             <b>Alacena</b>
           </NavLink>
-          <NavLink to="/ajustes" className="icon-btn" aria-label="Ajustes"><Settings size={21} /></NavLink>
+          <NavLink to="/ajustes" className="icon-btn" aria-label="Perfil"><Settings size={21} /></NavLink>
         </header>
-
         <main><Outlet /></main>
       </div>
 
-      <nav className="bottom-nav">
+      <nav className="bottom-nav" aria-label="Navegación principal">
         {mainNav.map(([to, label, Icon]) => (
           <NavLink key={to} to={to} className={({ isActive }) => isActive ? 'active' : ''}>
-            <Icon size={21} /><span>{label}</span>
+            <Icon size={21} /><span>{label === 'Alacena IA' ? 'IA' : label}</span>
           </NavLink>
         ))}
       </nav>

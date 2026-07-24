@@ -148,3 +148,75 @@ main { min-width: 0; }
   .app-shell{display:block;padding-bottom:82px}.desktop-sidebar{display:none}.mobile-topbar{position:sticky;top:0;z-index:35;display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:rgba(249,250,247,.83);backdrop-filter:blur(24px);border-bottom:1px solid var(--line)}.brand.compact{padding:0}.brand.compact .brand-icon{width:37px;height:37px;border-radius:12px}.brand.compact b{font-size:23px}.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:40;display:flex;justify-content:space-around;padding:7px 5px calc(7px + env(safe-area-inset-bottom));background:rgba(250,251,248,.90);backdrop-filter:blur(28px) saturate(150%);border-top:1px solid rgba(24,35,29,.09)}.bottom-nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#7b8780;text-decoration:none;font-size:10px;padding:5px}.bottom-nav a.active{color:var(--green)}.bottom-nav a.active svg{filter:drop-shadow(0 3px 8px rgba(18,60,45,.2))}.page{padding:24px 15px 40px}.page-head{align-items:flex-start}.page-head h2{font-size:34px}.dashboard-hero{min-height:310px;border-radius:27px}.hero-copy{padding:28px 23px}.hero-copy h3{font-size:38px}.metric-grid{grid-template-columns:1fr 1fr;gap:10px}.metric-card{grid-template-columns:auto 1fr;padding:14px}.metric-card>svg{display:none}.metric-card strong{font-size:21px}.dashboard-columns{grid-template-columns:1fr}.recipe-grid{grid-template-columns:1fr}.recipe-feature>div{padding:24px}.recipe-feature h3{font-size:28px}.assistant-actions{grid-template-columns:1fr 1fr}.add-row.advanced{grid-template-columns:1fr 46px 46px}.add-row.advanced select{grid-column:1/4}.add-row.advanced .qty,.add-row.advanced .unit{display:block;grid-row:3}.week-grid{grid-template-columns:1fr}.ticket-edit{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.settings-grid{grid-template-columns:1fr}.recurring-add{grid-template-columns:1fr 46px}.recurring-add select{grid-column:1/3}.voice-row{flex-wrap:wrap}.voice-row input{min-width:100%}.form-grid{grid-template-columns:1fr}.login-form-wrap{padding:18px}.login-card{padding:25px;border-radius:25px}
 }
 @media(max-width:430px){.metric-grid,.assistant-actions{grid-template-columns:1fr}.page-head{flex-direction:column}.page-action{width:100%}.page-action .primary{width:100%}}
+
+/* Alacena v7 — Apple-inspired kitchen hub */
+.sidebar-footnote {
+  margin-top: auto;
+  padding: 16px 13px 6px;
+  color: #9aa49e;
+  font-size: 11px;
+}
+.sidebar-footnote + .sidebar-logout { margin-top: 0; }
+
+.kitchen-overview {
+  min-height: 300px;
+  display: grid;
+  grid-template-columns: 1.08fr .92fr;
+  overflow: hidden;
+  border-radius: 32px;
+  color: white;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(244,195,79,.16), transparent 25%),
+    linear-gradient(135deg, #123c2d 0%, #0b271d 100%);
+  box-shadow: 0 28px 70px rgba(13,48,35,.18);
+}
+.kitchen-overview > div { padding: clamp(28px,5vw,52px); display: flex; flex-direction: column; justify-content: center; }
+.kitchen-overview h3 { margin: 14px 0 12px; max-width: 620px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(32px,4vw,50px); font-weight: 500; line-height: 1.03; }
+.kitchen-overview p { max-width: 570px; margin: 0; color: rgba(255,255,255,.72); line-height: 1.65; }
+.kitchen-overview img { width: 100%; height: 100%; min-height: 300px; object-fit: cover; }
+
+.kitchen-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+.kitchen-stats div {
+  padding: 17px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.78);
+  border: 1px solid rgba(255,255,255,.9);
+  box-shadow: 0 12px 36px rgba(25,48,36,.055);
+}
+.kitchen-stats strong { display: block; font-size: 23px; letter-spacing: -.04em; }
+.kitchen-stats span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+
+.kitchen-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+.kitchen-card {
+  overflow: hidden;
+  border-radius: 27px;
+  text-decoration: none;
+  background: rgba(255,255,255,.84);
+  border: 1px solid rgba(255,255,255,.94);
+  box-shadow: var(--shadow);
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.kitchen-card:hover { transform: translateY(-3px); box-shadow: 0 24px 60px rgba(25,48,36,.11); }
+.kitchen-card > img { width: 100%; height: 190px; object-fit: cover; display: block; }
+.kitchen-card-copy { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 13px; padding: 18px; }
+.kitchen-card-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; color: var(--green); background: #edf2ee; }
+.kitchen-card h3 { margin: 0; font-size: 18px; }
+.kitchen-card p { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.kitchen-card-copy > svg { color: #9aa59f; }
+
+@media (max-width: 900px) {
+  .kitchen-overview { grid-template-columns: 1fr; }
+  .kitchen-overview img { display: none; }
+  .kitchen-stats { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 620px) {
+  .kitchen-grid { grid-template-columns: 1fr; }
+  .kitchen-card > img { height: 165px; }
+  .kitchen-overview { min-height: 320px; border-radius: 27px; }
+  .kitchen-overview > div { padding: 28px 23px; }
+}

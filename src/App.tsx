@@ -1,1 +1,53 @@
-import{useEffect,useState}from'react';import{Navigate,Route,Routes}from'react-router-dom';import type{Session}from'@supabase/supabase-js';import Layout from'./components/Layout';import Login from'./pages/Login';import Dashboard from'./pages/Dashboard';import Grocery from'./pages/Grocery';import Pantry from'./pages/Pantry';import Menu from'./pages/Menu';import Recipes from'./pages/Recipes';import Tickets from'./pages/Tickets';import Reports from'./pages/Reports';import Settings from'./pages/Settings';import Assistant from'./pages/Assistant';import{isConfigured,supabase}from'./lib/supabase';export default function App(){const[session,setSession]=useState<Session|null>(null),[ready,setReady]=useState(!isConfigured);useEffect(()=>{if(!isConfigured)return;supabase.auth.getSession().then(({data})=>{setSession(data.session);setReady(true)});const{data}=supabase.auth.onAuthStateChange((_e,s)=>setSession(s));return()=>data.subscription.unsubscribe()},[]);if(!ready)return <div className="splash">Abriendo Alacena…</div>;if(isConfigured&&!session)return <Routes><Route path="*" element={<Login/>}/></Routes>;return <Routes><Route element={<Layout/>}><Route index element={<Navigate to="/inicio" replace/>}/><Route path="/inicio" element={<Dashboard/>}/><Route path="/lista" element={<Grocery/>}/><Route path="/despensa" element={<Pantry/>}/><Route path="/menu" element={<Menu/>}/><Route path="/recetas" element={<Recipes/>}/><Route path="/tickets" element={<Tickets/>}/><Route path="/reportes" element={<Reports/>}/><Route path="/asistente" element={<Assistant/>}/><Route path="/ajustes" element={<Settings/>}/></Route><Route path="*" element={<Navigate to="/inicio" replace/>}/></Routes>}
+import { useEffect, useState } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import type { Session } from '@supabase/supabase-js';
+import Layout from './components/Layout';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Grocery from './pages/Grocery';
+import Pantry from './pages/Pantry';
+import Menu from './pages/Menu';
+import Recipes from './pages/Recipes';
+import Tickets from './pages/Tickets';
+import Reports from './pages/Reports';
+import Settings from './pages/Settings';
+import Assistant from './pages/Assistant';
+import Kitchen from './pages/Kitchen';
+import { isConfigured, supabase } from './lib/supabase';
+
+export default function App() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [ready, setReady] = useState(!isConfigured);
+
+  useEffect(() => {
+    if (!isConfigured) return;
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setReady(true);
+    });
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  if (!ready) return <div className="splash">Abriendo Alacena…</div>;
+  if (isConfigured && !session) return <Routes><Route path="*" element={<Login />} /></Routes>;
+
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<Navigate to="/inicio" replace />} />
+        <Route path="/inicio" element={<Dashboard />} />
+        <Route path="/lista" element={<Grocery />} />
+        <Route path="/cocina" element={<Kitchen />} />
+        <Route path="/despensa" element={<Pantry />} />
+        <Route path="/menu" element={<Menu />} />
+        <Route path="/recetas" element={<Recipes />} />
+        <Route path="/tickets" element={<Tickets />} />
+        <Route path="/reportes" element={<Reports />} />
+        <Route path="/asistente" element={<Assistant />} />
+        <Route path="/ajustes" element={<Settings />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/inicio" replace />} />
+    </Routes>
+  );
+}
