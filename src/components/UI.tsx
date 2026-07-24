@@ -1,45 +1,42 @@
-import type { ReactNode } from "react";
-import { AlertCircle, Inbox } from "lucide-react";
+import type { ReactNode } from 'react';
+import { AlertCircle, PackageOpen } from 'lucide-react';
 
-type PageProps = {
+export function Page({
+  title,
+  subtitle,
+  action,
+  children,
+}: {
   title: string;
   subtitle?: string;
   action?: ReactNode;
   children: ReactNode;
-};
-
-export function Page({ title, subtitle, action, children }: PageProps) {
+}) {
   return (
     <section className="page">
       <header className="page-head">
         <div>
+          <span className="eyebrow">ALACENA</span>
           <h2>{title}</h2>
           {subtitle && <p>{subtitle}</p>}
         </div>
         {action && <div className="page-action">{action}</div>}
       </header>
-      <div className="page-content">{children}</div>
+      {children}
     </section>
   );
 }
 
-export function Card({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`card ${className}`.trim()}>{children}</div>;
 }
 
 export function Empty({ children }: { children: ReactNode }) {
   return (
     <div className="empty">
-      <span className="empty-icon">
-        <Inbox size={27} />
-      </span>
-      <div>{children}</div>
+      <span className="empty-icon"><PackageOpen size={24} /></span>
+      <strong>Todo listo por ahora</strong>
+      <p>{children}</p>
     </div>
   );
 }
@@ -47,11 +44,8 @@ export function Empty({ children }: { children: ReactNode }) {
 export function DemoBanner() {
   return (
     <div className="demo-banner">
-      <AlertCircle size={19} />
-      <div>
-        <strong>Modo demostración</strong>
-        <span>Configura Supabase para activar cuentas y sincronización.</span>
-      </div>
+      <AlertCircle size={18} />
+      <span>Modo demostración. Configura Supabase para sincronizar tu hogar.</span>
     </div>
   );
 }
