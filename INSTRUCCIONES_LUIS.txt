@@ -1,0 +1,20 @@
+ALACENA v7.1 — INSTALACIÓN SIN VS CODE
+
+Este ZIP contiene el proyecto completo. No necesitas modificar código.
+
+FORMA RECOMENDADA
+1. Descomprime el ZIP.
+2. Abre tu repositorio en GitHub.com.
+3. Entra a Add file > Upload files.
+4. Arrastra TODO el contenido descomprimido, no el ZIP.
+5. Pulsa Commit changes.
+6. Netlify hará el despliegue automáticamente.
+
+IMPORTANTE SOBRE NOTIFICACIONES
+La llave VAPID que estaba configurada es inválida: tiene 88 caracteres y al decodificarse produce 66 bytes. Una llave pública VAPID válida produce 65 bytes.
+Para activar notificaciones necesitas reemplazar una sola vez en Netlify el par completo:
+- VITE_VAPID_PUBLIC_KEY
+- VAPID_PRIVATE_KEY
+- VAPID_SUBJECT
+
+No es necesario tocar ningún archivo del proyecto.

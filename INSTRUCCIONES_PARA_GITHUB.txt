@@ -1,0 +1,21 @@
+ALACENA v8 — SUBIR DESDE GITHUB.COM
+
+1. Descomprime este ZIP en tu computadora.
+2. Abre tu repositorio de ALACENA en GitHub.
+3. Entra a la raíz del repositorio.
+4. Pulsa Add file > Upload files.
+5. Arrastra TODO el contenido descomprimido, no el ZIP cerrado.
+6. En Commit changes escribe: ALACENA v8.
+7. Pulsa Commit changes.
+8. Netlify publicará la actualización automáticamente.
+
+NO BORRES NI CAMBIES las variables de entorno guardadas en Netlify.
+
+Archivos que debes ver en la raíz:
+- package.json
+- netlify.toml
+- index.html
+- src
+- public
+- netlify
+- supabase

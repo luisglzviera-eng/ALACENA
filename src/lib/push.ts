@@ -1,16 +1,47 @@
 import { supabase, isConfigured } from './supabase';
 
-const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+const publicKey = (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined)?.trim();
 
-function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {
-  const padding = '='.repeat((4 - (value.length % 4)) % 4);
-  const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw = window.atob(base64);
-  return Uint8Array.from([...raw].map((char) => char.charCodeAt(0))) as Uint8Array<ArrayBuffer>;
+function decodeVapidKey(value: string): Uint8Array<ArrayBuffer> {
+  const normalized = value.trim();
+  if (!/^[A-Za-z0-9_-]+$/.test(normalized)) {
+    throw new Error('La llave pública de notificaciones contiene caracteres inválidos.');
+  }
+
+  const padding = '='.repeat((4 - (normalized.length % 4)) % 4);
+  const base64 = (normalized + padding).replace(/-/g, '+').replace(/_/g, '/');
+  let raw = '';
+  try {
+    raw = window.atob(base64);
+  } catch {
+    throw new Error('La llave pública de notificaciones no tiene un formato válido.');
+  }
+
+  const bytes = Uint8Array.from(raw, (char) => char.charCodeAt(0)) as Uint8Array<ArrayBuffer>;
+  if (bytes.length !== 65 || bytes[0] !== 4) {
+    throw new Error('La llave VAPID pública es inválida. Debe ser la llave pública completa del mismo par que VAPID_PRIVATE_KEY.');
+  }
+  return bytes;
+}
+
+function keyIsValid(): boolean {
+  if (!publicKey) return false;
+  try {
+    decodeVapidKey(publicKey);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function pushSupported(): boolean {
-  return Boolean(isConfigured && publicKey && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window);
+  return Boolean(
+    isConfigured &&
+      keyIsValid() &&
+      'serviceWorker' in navigator &&
+      'PushManager' in window &&
+      'Notification' in window,
+  );
 }
 
 export async function currentPushSubscription(): Promise<PushSubscription | null> {
@@ -20,23 +51,36 @@ export async function currentPushSubscription(): Promise<PushSubscription | null
 }
 
 export async function enablePush(deviceName?: string): Promise<PushSubscription> {
-  if (!pushSupported()) throw new Error('Las notificaciones push no están disponibles o falta VITE_VAPID_PUBLIC_KEY.');
+  if (!isConfigured) throw new Error('Supabase no está configurado.');
+  if (!publicKey) throw new Error('Falta configurar VITE_VAPID_PUBLIC_KEY en Netlify.');
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    throw new Error('Este navegador no admite notificaciones push.');
+  }
+
+  const applicationServerKey = decodeVapidKey(publicKey);
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') throw new Error('Debes permitir las notificaciones desde el sistema.');
+  if (permission !== 'granted') throw new Error('Debes permitir las notificaciones desde el navegador o el sistema.');
 
   const registration = await navigator.serviceWorker.ready;
   let subscription = await registration.pushManager.getSubscription();
   if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey!),
-    });
+    try {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey,
+      });
+    } catch (error) {
+      console.error('Push subscription error:', error);
+      throw new Error('No fue posible activar las notificaciones. Revisa que las llaves VAPID pública y privada sean válidas y pertenezcan al mismo par.');
+    }
   }
 
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) throw new Error('La sesión expiró. Vuelve a iniciar sesión.');
   const json = subscription.toJSON();
-  if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) throw new Error('El navegador no generó una suscripción válida.');
+  if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
+    throw new Error('El navegador no generó una suscripción válida.');
+  }
 
   const { error } = await supabase.from('push_subscriptions').upsert(
     {
