@@ -220,3 +220,56 @@ main { min-width: 0; }
   .kitchen-overview { min-height: 320px; border-radius: 27px; }
   .kitchen-overview > div { padding: 28px 23px; }
 }
+
+/* Alacena v8.1 — dashboard inteligente */
+.compact-hero { min-height: 270px; grid-template-columns: 1.16fr .84fr; }
+.compact-hero .hero-copy { padding: 32px 38px; }
+.compact-hero .hero-copy h3 { font-size: clamp(34px, 4vw, 49px); margin: 10px 0 8px; }
+.compact-hero .hero-copy p { max-width: 620px; }
+.hero-photo-wrap { position: relative; min-height: 270px; overflow: hidden; }
+.hero-photo-wrap > img { width: 100%; height: 100%; min-height: 270px; object-fit: cover; filter: saturate(.88) contrast(.96); }
+.hero-photo-wrap::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(12,39,29,.2), transparent 45%); }
+.hero-photo-note { position: absolute; z-index: 2; left: 18px; bottom: 18px; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid rgba(255,255,255,.45); border-radius: 14px; background: rgba(255,255,255,.78); color: var(--green); backdrop-filter: blur(18px); font-size: 12px; font-weight: 750; }
+.ai-command { margin-top: 20px; display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; padding: 7px 8px 7px 13px; border-radius: 17px; background: white; color: var(--green); box-shadow: 0 16px 36px rgba(0,0,0,.14); }
+.ai-command input { padding: 7px 3px; border: 0; box-shadow: none; background: transparent; }
+.ai-command input:focus { box-shadow: none; }
+.ai-command button { width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 11px; background: #edf2ee; color: var(--green); }
+.ai-command button:last-child { background: var(--gold); }
+.suggestion-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.suggestion-chips button { border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 7px 10px; background: rgba(255,255,255,.08); color: rgba(255,255,255,.85); font-size: 11px; }
+.suggestion-chips button:hover { background: rgba(255,255,255,.15); }
+.smart-metrics .metric-card { min-height: 136px; transition: transform .2s ease, box-shadow .2s ease; }
+.smart-metrics .metric-card:hover { transform: translateY(-3px); box-shadow: 0 22px 48px rgba(25,48,36,.11); }
+.insight-layout { grid-template-columns: 1.25fr .75fr; }
+.smart-feed { padding: 22px; }
+.insight-list { display: grid; gap: 8px; margin-top: 16px; }
+.insight-item { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 13px; border: 1px solid var(--line); border-radius: 17px; background: rgba(255,255,255,.58); text-decoration: none; }
+.insight-item > svg:first-child { width: 40px; height: 40px; padding: 10px; border-radius: 13px; background: #eaf1ec; color: var(--green); }
+.insight-item.warning > svg:first-child { background: #fff0ce; color: #966819; }
+.insight-item div { display: grid; gap: 3px; }
+.insight-item span { color: var(--muted); font-size: 12px; }
+.insight-item > svg:last-child { color: #9aa59f; }
+.budget-panel { background: linear-gradient(145deg, #fff8e8, #fff); }
+.budget-top { display: flex; align-items: baseline; gap: 7px; margin: 18px 0 10px; }
+.budget-top strong { font-size: 34px; letter-spacing: -.05em; }
+.budget-top span { color: var(--muted); font-size: 13px; }
+.budget-track { height: 9px; overflow: hidden; border-radius: 999px; background: #eee6d4; }
+.budget-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #e3aa2f, #f1c95e); }
+.recipe-strip { margin-top: 18px; }
+.section-heading-inline { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 12px; }
+.section-heading-inline h3 { margin: 4px 0 0; font-family: Georgia, serif; font-size: 25px; font-weight: 500; }
+.section-heading-inline a { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; color: var(--green); font-weight: 750; font-size: 13px; }
+.recipe-photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; }
+.recipe-photo-card { position: relative; min-height: 190px; overflow: hidden; border-radius: 23px; color: white; text-decoration: none; box-shadow: 0 18px 45px rgba(25,48,36,.10); transition: transform .22s ease; }
+.recipe-photo-card:hover { transform: translateY(-3px); }
+.recipe-photo-card img { width: 100%; height: 100%; min-height: 190px; object-fit: cover; display: block; }
+.recipe-photo-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 30%, rgba(6,19,14,.78)); }
+.recipe-photo-card div { position: absolute; z-index: 2; left: 16px; right: 16px; bottom: 15px; display: grid; gap: 4px; }
+.recipe-photo-card span { text-transform: uppercase; letter-spacing: .12em; font-size: 9px; font-weight: 800; color: #f1cf7e; }
+.recipe-photo-card strong { font-family: Georgia, serif; font-size: 21px; font-weight: 500; }
+@media (max-width: 1000px) { .compact-hero { grid-template-columns: 1fr; } .hero-photo-wrap { display: none; } .insight-layout { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .compact-hero { min-height: auto; } .compact-hero .hero-copy { padding: 26px 22px; } .compact-hero .hero-copy h3 { font-size: 36px; } .ai-command { grid-template-columns: auto 1fr auto; } .ai-command button:nth-of-type(1) { display: none; } .suggestion-chips { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; } .suggestion-chips button { flex: 0 0 auto; } .recipe-photo-grid { grid-template-columns: 1fr; } .recipe-photo-card, .recipe-photo-card img { min-height: 175px; } }
+.assistant-command { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; margin-bottom: 16px; padding: 9px 10px 9px 15px; border-radius: 20px; background: rgba(255,255,255,.86); border: 1px solid rgba(255,255,255,.95); box-shadow: var(--shadow); color: var(--green); }
+.assistant-command input { border: 0; background: transparent; box-shadow: none; }
+.assistant-command input:focus { box-shadow: none; }
+@media (max-width: 620px) { .assistant-command { grid-template-columns: auto 1fr auto; } .assistant-command .icon-btn { display: none; } }

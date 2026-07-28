@@ -16,7 +16,7 @@ const mainNav = [
   ['/lista', 'Compras', ListChecks],
   ['/cocina', 'Cocina', ChefHat],
   ['/asistente', 'Alacena IA', Sparkles],
-  ['/ajustes', 'Perfil', Settings],
+  ['/ajustes', 'Ajustes', Settings],
 ] as const;
 
 const desktopExtras = [
@@ -68,7 +68,7 @@ export default function Layout() {
             <span className="brand-icon"><ShoppingBasket size={20} /></span>
             <b>Alacena</b>
           </NavLink>
-          <NavLink to="/ajustes" className="icon-btn" aria-label="Perfil"><Settings size={21} /></NavLink>
+          <NavLink to="/ajustes" className="icon-btn" aria-label="Ajustes"><Settings size={21} /></NavLink>
         </header>
         <main><Outlet /></main>
       </div>
