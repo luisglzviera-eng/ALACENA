@@ -1,20 +1,15 @@
-ALACENA v7.1 — INSTALACIÓN SIN VS CODE
+ALACENA v8.3 — IA ACCIONABLE
 
-Este ZIP contiene el proyecto completo. No necesitas modificar código.
+1. Descomprime este ZIP.
+2. En GitHub abre el repositorio de Alacena.
+3. Sube TODO el contenido de la carpeta ALACENA-main y reemplaza los archivos.
+4. Haz Commit changes.
+5. Espera a que Netlify muestre Published.
 
-FORMA RECOMENDADA
-1. Descomprime el ZIP.
-2. Abre tu repositorio en GitHub.com.
-3. Entra a Add file > Upload files.
-4. Arrastra TODO el contenido descomprimido, no el ZIP.
-5. Pulsa Commit changes.
-6. Netlify hará el despliegue automáticamente.
+No cambies las variables de entorno.
 
-IMPORTANTE SOBRE NOTIFICACIONES
-La llave VAPID que estaba configurada es inválida: tiene 88 caracteres y al decodificarse produce 66 bytes. Una llave pública VAPID válida produce 65 bytes.
-Para activar notificaciones necesitas reemplazar una sola vez en Netlify el par completo:
-- VITE_VAPID_PUBLIC_KEY
-- VAPID_PRIVATE_KEY
-- VAPID_SUBJECT
-
-No es necesario tocar ningún archivo del proyecto.
+CORRECCIÓN PRINCIPAL
+- Las recomendaciones de IA ahora se pueden seleccionar.
+- Puedes agregar una, varias o todas a Compras.
+- Las solicitudes para HEB, Costco o supermercado generan productos estructurados.
+- Las recetas muestran ingredientes y permiten agregarlos a Compras.
