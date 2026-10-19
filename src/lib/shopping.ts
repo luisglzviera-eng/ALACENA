@@ -540,13 +540,15 @@ export type ReceiptItem = { name: string; category: Category; quantity: number |
   pantry_quantity: number; pantry_unit: string; needs_check: boolean;
 };
 
-/** Cantidad × contenido de un paquete → cantidad para la despensa, con unidades cómodas (1000 g → 1 kg). */
+/**
+ * Lo que entra a la despensa. Si el paquete trae VARIAS piezas adentro ("HUEVO 30 PZ") se multiplica: 1 × 30 = 30 pza.
+ * Si cada paquete es una unidad con presentación ("YOGURT 70 GR", "LECHE 1 LT") quedan las piezas (4 × 70 g = 4 pza)
+ * y la presentación se queda en el nombre.
+ */
 export function pantryAmount(quantity: number, packSize: number | null, packUnit: string | null): { quantity: number; unit: string } {
-  let q = packSize && packSize > 0 ? quantity * packSize : quantity;
-  let unit = packSize && packSize > 0 ? normalizeUnit(packUnit) : 'pza';
-  if (unit === 'g' && q >= 1000) { q /= 1000; unit = 'kg'; }
-  if (unit === 'ml' && q >= 1000) { q /= 1000; unit = 'L'; }
-  return { quantity: Math.round(q * 1000) / 1000, unit };
+  const countable = packSize && packSize > 0 && normalizeUnit(packUnit) === 'pza';
+  const q = countable ? quantity * (packSize as number) : quantity;
+  return { quantity: Math.round(q * 1000) / 1000, unit: 'pza' };
 }
 export type ReceiptRead = { store: string | null; date: string | null; items: ReceiptItem[]; total: number; itemsSum: number };
 
@@ -583,7 +585,10 @@ export function normalizeReceiptResponse(data: unknown): ReceiptRead {
     const amount = weighed ? { quantity: quantity ?? 1, unit } : pantryAmount(quantity ?? 1, packSize, raw?.pack_unit);
     const food = isFoodCategory(category);
     const needs_check = food && !weighed && !packSize && ['Carnes y pescado', 'Frutas y verduras'].includes(category);
-    items.push({ name, category, quantity, unit, unit_price, total_price, is_food: food, pantry_quantity: amount.quantity, pantry_unit: amount.unit, needs_check });
+    // La presentación (70 g, 1 L…) se conserva en el nombre para no perderla.
+    const sizeText = packSize && !weighed && normalizeUnit(raw?.pack_unit) !== 'pza' ? `${packSize} ${normalizeUnit(raw?.pack_unit)}` : '';
+    const finalName = sizeText && !name.toLowerCase().includes(String(packSize)) ? `${name} (${sizeText})`.slice(0, 80) : name;
+    items.push({ name: finalName, category, quantity, unit, unit_price, total_price, is_food: food, pantry_quantity: amount.quantity, pantry_unit: amount.unit, needs_check });
   }
   const storeText = String(src.store ?? '').toLowerCase();
   const store = /heb|h-e-b/.test(storeText) ? 'HEB' : /costco/.test(storeText) ? 'Costco' : /\bsam.?s\b/.test(storeText) ? "Sam's" : /calii/.test(storeText) ? 'Calii' : storeText.trim() ? 'Otro' : null;

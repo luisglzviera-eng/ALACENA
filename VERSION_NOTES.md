@@ -1,3 +1,8 @@
+# v8.10.4 — Piezas vs. contenido
+- Envases individuales (yogurt 70 g, leche 1 L): la despensa guarda las piezas (4 pza) y la presentación queda en el nombre.
+- Paquetes con varias piezas adentro (huevo 30 PZ): se multiplica (30 pza).
+- No requiere SQL.
+
 # v8.10.3 — La IA calcula lo que entra a la despensa
 - Lee el contenido del paquete de la descripción (HUEVO 30 PZ = 30 piezas, 5 × LECHE 1 LT = 5 L, 4 × 70 gr = 280 g).
 - Si el ticket no dice cuánto trae (pechuga), te lo marca para confirmar antes de guardar.
