@@ -1,3 +1,9 @@
+# ALACENA 8.4.1 — correcciones de uso en iPhone
+
+- Cantidad editable: campo de texto con botones − / + (ya no se atora al borrar o escribir).
+- Compras: nuevo botón "Vaciar lista" (con confirmación) y "Quitar marcados" / borrar uno ahora actualizan la pantalla al instante.
+- Si Supabase rechaza un borrado, se muestra el error en lugar de fallar en silencio.
+
 # ALACENA 8.4 — Sprint 1: Lista inteligente funcional
 
 Qué hace ahora:

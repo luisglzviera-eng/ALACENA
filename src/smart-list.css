@@ -42,8 +42,7 @@
 .sl-badge { justify-self: start; font-style: normal; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; color: #7a5a12; background: rgba(227,170,47,.18); }
 .sl-badge.ok { color: #165b41; background: rgba(22,91,65,.12); }
 .sl-qty { display: flex; gap: 6px; }
-.sl-qty input { width: 68px; padding: 9px 8px; border-radius: 12px; text-align: center; }
-.sl-qty select { width: 92px; padding: 9px 8px; border-radius: 12px; }
+.sl-qty select { width: 88px; padding: 9px 8px; border-radius: 12px; }
 .sl-price { text-align: right; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .sl-error { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px; background: rgba(255,246,243,.94); border: 1px solid rgba(177,66,48,.18); color: #9f3f31; }
@@ -60,6 +59,12 @@
 @media (max-width: 620px) {
   .sl-row { grid-template-columns: 28px 1fr auto; row-gap: 10px; }
   .sl-qty { grid-column: 2 / 4; }
-  .sl-qty input { width: 82px; }
   .sl-error { flex-wrap: wrap; }
 }
+
+.sl-stepper { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow: hidden; }
+.sl-stepper button { width: 36px; height: 40px; padding: 0; border: 0; background: transparent; color: var(--green); display: grid; place-items: center; }
+.sl-stepper button:disabled { opacity: .35; }
+.sl-stepper input { width: 52px; border: 0 !important; border-radius: 0 !important; text-align: center; padding: 9px 2px !important; font-size: 16px; background: transparent; box-shadow: none !important; }
+.grocery-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.grocery-actions button:disabled { opacity: .4; }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertCircle, Check, Info, ShoppingCart } from 'lucide-react';
+import { AlertCircle, Check, Info, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { CATEGORIES, type GroceryItem } from '../types';
 import {
   UNITS,
@@ -23,6 +23,35 @@ type Props = {
   onAdd: (rows: NewGroceryRow[]) => Promise<AddResult>;
   onViewList: () => void;
 };
+
+
+function QtyField({ value, name, disabled, onChange }: { value: number; name: string; disabled: boolean; onChange: (n: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const shown = draft ?? String(value > 0 ? value : '');
+  const bump = (delta: number) => { setDraft(null); onChange(Math.max(0.5, Math.round(((value > 0 ? value : 1) + delta) * 100) / 100)); };
+  return (
+    <div className="sl-stepper">
+      <button type="button" aria-label={`Menos ${name}`} disabled={disabled} onClick={() => bump(-1)}><Minus size={15} /></button>
+      <input
+        type="text"
+        inputMode="decimal"
+        aria-label={`Cantidad de ${name}`}
+        value={shown}
+        disabled={disabled}
+        onFocus={event => event.target.select()}
+        onChange={event => {
+          const v = event.target.value.replace(',', '.');
+          if (!/^\d*\.?\d*$/.test(v)) return;
+          setDraft(v);
+          const n = Number(v);
+          if (n > 0) onChange(n);
+        }}
+        onBlur={() => setDraft(null)}
+      />
+      <button type="button" aria-label={`Más ${name}`} disabled={disabled} onClick={() => bump(1)}><Plus size={15} /></button>
+    </div>
+  );
+}
 
 export default function SmartShoppingList({ items, answer, household, groceries, onAdd, onViewList }: Props) {
   const [rows, setRows] = useState<Row[]>(() =>
@@ -143,16 +172,7 @@ export default function SmartShoppingList({ items, answer, household, groceries,
                       {status === 'ready' && row.why && <span>{row.why}</span>}
                     </div>
                     <div className="sl-qty">
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        step="0.5"
-                        aria-label={`Cantidad de ${row.name}`}
-                        value={row.quantity > 0 ? row.quantity : ''}
-                        disabled={status !== 'ready'}
-                        onChange={event => patch(row.id, { quantity: Number(event.target.value) })}
-                      />
+                      <QtyField value={row.quantity} name={row.name} disabled={status !== 'ready'} onChange={n => patch(row.id, { quantity: n })} />
                       <select
                         aria-label={`Unidad de ${row.name}`}
                         value={row.unit}
