@@ -6,9 +6,9 @@ import {
   ListChecks,
   LogOut,
   Settings,
-  ShoppingBasket,
   Sparkles,
 } from 'lucide-react';
+import Logo from './Logo';
 import { isConfigured, supabase } from '../lib/supabase';
 
 const mainNav = [
@@ -35,7 +35,7 @@ export default function Layout() {
     <div className="app-shell">
       <aside className="desktop-sidebar">
         <NavLink to="/inicio" className="brand">
-          <span className="brand-icon"><ShoppingBasket size={24} /></span>
+          <span className="brand-icon"><Logo size={32} /></span>
           <span><b>Alacena</b><small>Tu hogar, en orden</small></span>
         </NavLink>
 
@@ -65,7 +65,7 @@ export default function Layout() {
       <div className="app-content">
         <header className="mobile-topbar">
           <NavLink to="/inicio" className="brand compact">
-            <span className="brand-icon"><ShoppingBasket size={20} /></span>
+            <span className="brand-icon"><Logo size={28} /></span>
             <b>Alacena</b>
           </NavLink>
           <NavLink to="/ajustes" className="icon-btn" aria-label="Ajustes"><Settings size={21} /></NavLink>

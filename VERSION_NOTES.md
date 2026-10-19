@@ -1,3 +1,7 @@
+# v8.12.1 — Logo nuevo
+- Logo "casa con repisas" en el encabezado, la pantalla de entrada y el ícono de la app (incluye ícono para iPhone).
+- Si en el celular sigue el ícono viejo: quita la app de la pantalla de inicio y vuelve a agregarla.
+
 # v8.12.0 — Carga inicial de la despensa con fotos
 - Despensa → botón "Fotos": eliges hasta 8 fotos (refri por repisa, congelador, alacena); la IA lista lo que ve.
 - Revisas nombre, cantidad, unidad y categoría; lo estimado sale en amarillo para confirmar.

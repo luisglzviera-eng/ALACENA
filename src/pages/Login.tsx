@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, ShoppingBasket, Sparkles } from 'lucide-react';
+import Logo from '../components/Logo';
+import { ArrowRight, Check, Sparkles } from 'lucide-react';
 import { isConfigured, supabase } from '../lib/supabase';
 
 export default function Login() {
@@ -25,7 +26,7 @@ export default function Login() {
   return (
     <div className="login-page">
       <section className="login-visual">
-        <div className="login-brand"><span><ShoppingBasket size={24} /></span><b>Alacena</b></div>
+        <div className="login-brand"><span><Logo size={32} /></span><b>Alacena</b></div>
         <div className="login-copy">
           <span className="hero-kicker"><Sparkles size={15} /> TU COCINA, MÁS INTELIGENTE</span>
           <h1>Organiza tu hogar con la sencillez que esperas de Apple.</h1>
@@ -41,7 +42,7 @@ export default function Login() {
 
       <section className="login-form-wrap">
         <form className="login-card" onSubmit={submit}>
-          <span className="login-logo"><ShoppingBasket size={31} /></span>
+          <span className="login-logo"><Logo size={40} /></span>
           <div><span className="eyebrow">BIENVENIDO</span><h2>Entra a tu hogar</h2><p>Continúa donde lo dejaste.</p></div>
           <label>Correo<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="tu@correo.com" required /></label>
           <label>Contraseña<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" required /></label>

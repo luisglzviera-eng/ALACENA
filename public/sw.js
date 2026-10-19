@@ -1,4 +1,4 @@
-const CACHE = 'alacena-v3';
+const CACHE = 'alacena-v4';
 const ASSETS = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', (event) => {
