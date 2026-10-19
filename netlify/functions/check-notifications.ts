@@ -47,8 +47,8 @@ export const handler: Handler = async () => {
       if (subscription.menu_alerts && now.hour === subscription.daily_menu_hour) {
         const day = dayMap[now.weekday];
         const meals = week?.days?.[day];
-        if (meals?.lunch || meals?.dinner) {
-          const body = [meals.lunch && `Comida: ${meals.lunch}`, meals.dinner && `Cena: ${meals.dinner}`].filter(Boolean).join(' · ');
+        if (meals?.breakfast || meals?.lunch || meals?.snack || meals?.kids || meals?.dinner) {
+          const body = [meals.breakfast && `Desayuno: ${meals.breakfast}`, meals.lunch && `Comida: ${meals.lunch}`, meals.snack && `Snack: ${meals.snack}`, meals.kids && `Lunch niña: ${meals.kids}`, meals.dinner && `Cena: ${meals.dinner}`].filter(Boolean).join(' · ');
           if (await deliver(subscription, 'menu', `menu:${now.date}`, 'Menú de hoy', body, '/menu', now.date)) sent++;
         }
       }

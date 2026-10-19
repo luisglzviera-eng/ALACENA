@@ -1,3 +1,8 @@
+# v8.9.0 — Menú con más comidas
+- Cada día ahora tiene Desayuno, Comida, Snack, Lunch de la niña y Cena.
+- "Armar semana con IA" deja elegir qué comidas incluir.
+- No requiere SQL ni cambios en Netlify.
+
 # ALACENA 8.8.0 — Sprint 4: Menú semanal funcional
 
 - Escribir una comida ya NO guarda por cada letra: se guarda al salir del campo (o Enter). Antes la pantalla podía perder letras y saturaba Supabase. Dos comidas seguidas no se pisan.

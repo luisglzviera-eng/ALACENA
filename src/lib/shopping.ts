@@ -420,7 +420,10 @@ export const stepForUnit = (unit: string) => (unit === 'g' || unit === 'ml' ? 10
 /* ───────────── Menú semanal ───────────── */
 
 export const MENU_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as const;
-export type MenuDaysMap = Record<string, { lunch: string; dinner: string }>;
+export const MENU_SLOTS = ['breakfast', 'lunch', 'snack', 'kids', 'dinner'] as const;
+export type MenuSlot = (typeof MENU_SLOTS)[number];
+export const SLOT_LABEL: Record<MenuSlot, string> = { breakfast: 'Desayuno', lunch: 'Comida', snack: 'Snack', kids: 'Lunch de la niña', dinner: 'Cena' };
+export type MenuDaysMap = Record<string, Partial<Record<MenuSlot, string>>>;
 
 /** Limpia el menú que devuelve la IA: solo los 7 días, textos cortos, sin vacíos inventados. */
 export function normalizeMenuResponse(data: unknown): { answer: string; days: MenuDaysMap; filled: number } {
@@ -431,10 +434,15 @@ export function normalizeMenuResponse(data: unknown): { answer: string; days: Me
   for (const day of MENU_DAYS) {
     const entry = raw[day] ?? raw[strip(day)] ?? raw[day.toLowerCase()] ?? raw[strip(day).toLowerCase()] ?? {};
     const clean = (v: unknown) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
-    const lunch = clean(entry.lunch ?? entry.comida);
-    const dinner = clean(entry.dinner ?? entry.cena);
-    days[day] = { lunch, dinner };
-    filled += (lunch ? 1 : 0) + (dinner ? 1 : 0);
+    const values: Record<MenuSlot, string> = {
+      breakfast: clean(entry.breakfast ?? entry.desayuno),
+      lunch: clean(entry.lunch ?? entry.comida),
+      snack: clean(entry.snack ?? entry.colacion ?? entry.colación),
+      kids: clean(entry.kids ?? entry.lunch_nina ?? entry.lunch_niña ?? entry.kidsLunch),
+      dinner: clean(entry.dinner ?? entry.cena),
+    };
+    days[day] = values;
+    filled += MENU_SLOTS.filter(s => values[s]).length;
   }
   return { answer: typeof source.answer === 'string' ? source.answer.trim() : '', days, filled };
 }
@@ -471,12 +479,12 @@ export function mergeIngredients(list: ParsedIngredient[]): ParsedIngredient[] {
   return groups.map(g => g.item);
 }
 
-export type MealSlotInfo = { day: string; slot: 'lunch' | 'dinner'; text: string };
+export type MealSlotInfo = { day: string; slot: MenuSlot; text: string };
 
 export function plannedMeals(days: MenuDaysMap | Record<string, any>): MealSlotInfo[] {
   const out: MealSlotInfo[] = [];
   for (const day of MENU_DAYS) {
-    for (const slot of ['lunch', 'dinner'] as const) {
+    for (const slot of MENU_SLOTS) {
       const text = String(days?.[day]?.[slot] ?? '').trim();
       if (text) out.push({ day, slot, text });
     }

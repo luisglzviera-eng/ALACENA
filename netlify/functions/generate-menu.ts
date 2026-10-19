@@ -1,7 +1,7 @@
 import type { Handler } from '@netlify/functions';
 import { callOpenAI, json } from './_shared/openai';
 import { friendlyAIError } from './_shared/errors';
-import { normalizeMenuResponse } from '../../src/lib/shopping';
+import { MENU_SLOTS, SLOT_LABEL, normalizeMenuResponse, type MenuSlot } from '../../src/lib/shopping';
 
 export const handler: Handler = async event => {
   if (event.httpMethod === 'OPTIONS') return json(200, {});
@@ -15,12 +15,17 @@ export const handler: Handler = async event => {
     const saved = names(body.savedRecipes, 40);
     const pantry = names(body.pantry, 50);
     const expiring = names(body.expiring, 15);
+    const asked = (Array.isArray(body.slots) ? body.slots : []).filter((s: unknown): s is MenuSlot => MENU_SLOTS.includes(s as MenuSlot));
+    const slots: MenuSlot[] = MENU_SLOTS.filter(s => (asked.length ? asked.includes(s) : s === 'lunch' || s === 'dinner'));
+    if (!slots.length) slots.push('lunch', 'dinner');
+    const shape = '{' + slots.map(s => `"${s}":"platillo"`).join(',') + '}';
+    const slotText = slots.map(s => s === 'kids' ? 'kids = lunch escolar de la niña (se lleva a la escuela: frío, fácil de empacar, sin picante)' : s === 'snack' ? 'snack = colación ligera' : `${s} = ${SLOT_LABEL[s].toLowerCase()}`).join('; ');
     const keep = (Array.isArray(body.keep) ? body.keep : []).slice(0, 14).map((x: unknown) => String(x).slice(0, 60)).filter(Boolean);
 
     const prompt = [
       'Eres Alacena, asistente culinario de una familia en México. Responde SOLO con JSON válido, en español de México.',
-      'Forma exacta: {"answer":"frase corta","days":{"Lunes":{"lunch":"platillo","dinner":"platillo"},"Martes":{...},"Miércoles":{...},"Jueves":{...},"Viernes":{...},"Sábado":{...},"Domingo":{...}}}',
-      `Arma el menú de una semana (comida y cena, 7 días) para ${people} personas. Cada platillo es solo el NOMBRE (máximo 6 palabras), sin descripción.`,
+      `Forma exacta: {"answer":"frase corta","days":{"Lunes":${shape},"Martes":{...},"Miércoles":{...},"Jueves":{...},"Viernes":{...},"Sábado":{...},"Domingo":{...}}}`,
+      `Arma el menú de una semana (7 días) para ${people} personas con estas comidas por día: ${slotText}. Cada platillo es solo el NOMBRE (máximo 6 palabras), sin descripción.`,
       request ? `Pedido de la persona: ${request}` : '',
       `Dieta persona 1: ${prefs.diet_user || 'sin restricciones indicadas'}. Dieta persona 2: ${prefs.diet_partner || 'sin restricciones indicadas'}. TODOS los platillos deben respetar AMBAS dietas.`,
       prefs.kids_recipes ? 'Hay niños: incluye varias opciones sencillas y poco picantes que les gusten.' : '',
@@ -32,9 +37,9 @@ export const handler: Handler = async event => {
       keep.length ? `Ya están decididos y NO debes cambiarlos ni repetirlos: ${keep.join(', ')}.` : '',
     ].filter(Boolean).join('\n');
 
-    const data = await callOpenAI([{ type: 'text', text: prompt }], { task: 'recipe_suggestions', maxOutputTokens: 1400, timeoutMs: 26000 });
+    const data = await callOpenAI([{ type: 'text', text: prompt }], { task: 'recipe_suggestions', maxOutputTokens: 2200, timeoutMs: 26000 });
     const plan = normalizeMenuResponse(data);
-    if (plan.filled < 4) return json(502, { error: 'La IA no devolvió un menú completo. Intenta de nuevo.' });
+    if (plan.filled < Math.min(4, slots.length * 2)) return json(502, { error: 'La IA no devolvió un menú completo. Intenta de nuevo.' });
     return json(200, plan);
   } catch (error) {
     const message = friendlyAIError(error instanceof Error ? error.message : 'Error inesperado');

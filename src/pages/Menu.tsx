@@ -5,13 +5,13 @@ import { useApp } from '../context/AppContext';
 import { Page } from '../components/UI';
 import SmartShoppingList from '../components/SmartShoppingList';
 import {
-  MENU_DAYS, expiryInfo, findDuplicate, findRecipeForMeal, mergeIngredients, normalizeShoppingResponse, parseIngredient, plannedMeals,
-  type MenuDaysMap, type ParsedIngredient, type ShoppingItem,
+  MENU_DAYS, MENU_SLOTS, SLOT_LABEL, expiryInfo, findDuplicate, findRecipeForMeal, mergeIngredients, normalizeShoppingResponse, parseIngredient, plannedMeals,
+  type MenuDaysMap, type MenuSlot, type ParsedIngredient, type ShoppingItem,
 } from '../lib/shopping';
 import type { MenuWeek, Recipe } from '../types';
 
-type Slot = 'lunch' | 'dinner';
-const SLOT_LABEL: Record<Slot, string> = { lunch: 'Comida', dinner: 'Cena' };
+type Slot = MenuSlot;
+const MEAL_TYPE: Record<Slot, string> = { breakfast: 'desayuno', lunch: 'comida normal', snack: 'snack', kids: 'para niños', dinner: 'cena ligera' };
 type Notice = { tone: 'ok' | 'error'; text: string };
 
 async function postJSON(url: string, body: unknown, ms = 32000): Promise<{ ok: boolean; status: number; data: any }> {
@@ -41,7 +41,7 @@ function SlotPicker({ day, slot, recipes, onPick, onClose, context }: { day: str
     if (loading) return;
     setLoading(true); setError('');
     try {
-      const res = await postJSON('/.netlify/functions/suggest-recipes', { ...context(), mealType: slot === 'lunch' ? 'comida normal' : 'cena ligera' });
+      const res = await postJSON('/.netlify/functions/suggest-recipes', { ...context(), mealType: MEAL_TYPE[slot] });
       if (!res.ok) throw new Error(res.data?.error || 'La IA tardó demasiado en responder.');
       const names = (Array.isArray(res.data.suggestions) ? res.data.suggestions : []).map((x: any) => String(x?.name ?? x).trim()).filter(Boolean).slice(0, 8);
       if (!names.length) throw new Error('La IA no devolvió ideas. Intenta de nuevo.');
@@ -81,6 +81,7 @@ export default function Menu() {
   const [aiError, setAiError] = useState('');
   const [aiPlan, setAiPlan] = useState<{ days: MenuDaysMap; answer: string } | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiSlots, setAiSlots] = useState<Slot[]>([...MENU_SLOTS]);
 
   const [shopLoading, setShopLoading] = useState(false);
   const [shop, setShop] = useState<{ key: number; items: ShoppingItem[]; notes: string[] } | null>(null);
@@ -119,7 +120,7 @@ export default function Menu() {
     setAiLoading(true); setAiError(''); setAiPlan(null);
     try {
       const res = await postJSON('/.netlify/functions/generate-menu', {
-        prompt: aiPrompt.trim(), people,
+        prompt: aiPrompt.trim(), people, slots: aiSlots,
         preferences: { diet_user: preferences.diet_user, diet_partner: preferences.diet_partner, kids_recipes: preferences.kids_recipes, budget_priority: preferences.budget_priority },
         savedRecipes: recipes.slice(0, 40).map(r => ({ name: r.name })),
         pantry: stockedPantry.slice(0, 50).map(p => ({ name: p.text })),
@@ -138,10 +139,11 @@ export default function Menu() {
     const next: MenuDaysMap = {};
     let changed = 0;
     for (const day of MENU_DAYS) {
-      next[day] = { lunch: active.days[day]?.lunch ?? '', dinner: active.days[day]?.dinner ?? '' };
-      for (const slot of ['lunch', 'dinner'] as const) {
+      next[day] = { ...(active.days[day] || {}), lunch: active.days[day]?.lunch ?? '', dinner: active.days[day]?.dinner ?? '' };
+      for (const slot of MENU_SLOTS) {
         const suggestion = aiPlan.days[day]?.[slot] ?? '';
-        if (suggestion && (mode === 'all' || !next[day][slot])) { if (next[day][slot] !== suggestion) changed++; next[day][slot] = suggestion; }
+        const current = next[day][slot] ?? '';
+        if (suggestion && (mode === 'all' || !current)) { if (current !== suggestion) changed++; next[day][slot] = suggestion; }
       }
     }
     const { error } = await saveWeekDays(next);
@@ -225,6 +227,9 @@ export default function Menu() {
           <h3>Armar la semana con IA</h3>
           <p className="muted">Respeta las dietas de Ajustes, usa tus recetas y lo que ya tienes. No cambia lo que ya escribiste hasta que tú lo apliques.</p>
           <input value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Ej. semana económica, cenas ligeras" aria-label="Pedido para el menú" />
+          <div className="mn-chips" role="group" aria-label="Qué comidas incluir">
+            {MENU_SLOTS.map(s => <button type="button" key={s} aria-pressed={aiSlots.includes(s)} className={aiSlots.includes(s) ? 'on' : ''} onClick={() => setAiSlots(cur => cur.includes(s) ? (cur.length > 1 ? cur.filter(x => x !== s) : cur) : [...cur, s])}>{aiSlots.includes(s) ? '✓ ' : ''}{SLOT_LABEL[s]}</button>)}
+          </div>
           <div className="mn-people"><span>Para</span>
             <div className="sl-stepper"><button type="button" aria-label="Menos personas" onClick={() => setPeople(p => Math.max(1, p - 1))}>−</button><b className="pn-qty">{people} {people === 1 ? 'persona' : 'personas'}</b><button type="button" aria-label="Más personas" onClick={() => setPeople(p => Math.min(20, p + 1))}>+</button></div>
           </div>
@@ -233,7 +238,7 @@ export default function Menu() {
           {aiPlan && (
             <div className="mn-plan">
               {aiPlan.answer && <p className="assistant-answer">{aiPlan.answer}</p>}
-              <ul>{MENU_DAYS.map(day => <li key={day}><strong>{day}</strong><span>{aiPlan.days[day]?.lunch || '—'}</span><span>{aiPlan.days[day]?.dinner || '—'}</span></li>)}</ul>
+              <ul>{MENU_DAYS.map(day => <li key={day}><strong>{day}</strong>{MENU_SLOTS.filter(s => aiPlan.days[day]?.[s]).map(s => <span key={s}><small>{SLOT_LABEL[s]}: </small>{aiPlan.days[day]?.[s]}</span>)}</li>)}</ul>
               <div className="actions">
                 <button type="button" className="primary small" onClick={() => void applyPlan('empty')}>Aplicar solo a los vacíos</button>
                 <button type="button" className="secondary small" onClick={() => void applyPlan('all')}>Reemplazar todo</button>
@@ -248,7 +253,7 @@ export default function Menu() {
         {MENU_DAYS.map(day => (
           <article className="day-card" key={day}>
             <h3>{day}</h3>
-            {(['lunch', 'dinner'] as const).map(slot => {
+            {MENU_SLOTS.map(slot => {
               const key = `${day}|${slot}`;
               const open = picker?.day === day && picker.slot === slot;
               return (

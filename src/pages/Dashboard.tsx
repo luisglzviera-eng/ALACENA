@@ -36,7 +36,7 @@ export default function Dashboard() {
   const lowStock = pantry.filter((item) => item.quantity <= item.low_stock_at);
   const activeWeek = weeks.find((week) => !week.archived);
   const day = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][new Date().getDay()];
-  const meal = activeWeek?.days[day]?.lunch || activeWeek?.days[day]?.dinner || 'Aún sin plan';
+  const meal = activeWeek?.days[day]?.lunch || activeWeek?.days[day]?.dinner || activeWeek?.days[day]?.breakfast || 'Aún sin plan';
   const pending = groceries.filter((item) => !item.checked).length;
   const budgetProgress = preferences.monthly_budget > 0 ? Math.min(100, Math.round((spent / preferences.monthly_budget) * 100)) : 0;
   const featuredRecipes = recipes.slice(0, 3);
