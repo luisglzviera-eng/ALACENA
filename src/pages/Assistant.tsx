@@ -1,10 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Camera, Check, ChefHat, Mic, PackagePlus, Plus, Send, ShoppingCart, Sparkles, Utensils } from 'lucide-react';
+import { AlertCircle, Camera, Check, ChefHat, Mic, PackagePlus, Plus, Send, ShoppingCart, Sparkles, Utensils } from 'lucide-react';
 import { Page } from '../components/UI';
+import SmartShoppingList from '../components/SmartShoppingList';
 import { useApp } from '../context/AppContext';
 import { CATEGORIES, type Category } from '../types';
 import { fileToBase64 } from '../lib/utils';
+import {
+  guessCategory,
+  normalizeCategory,
+  normalizeShoppingResponse,
+  normalizeUnit,
+  parseShoppingRequest,
+  type Household,
+  type NewGroceryRow,
+  type ShoppingItem,
+} from '../lib/shopping';
 
 type AIItem = {
   name: string;
@@ -15,6 +26,16 @@ type AIItem = {
   ingredients?: string[];
 };
 
+type Notice = { tone: 'ok' | 'error'; text: string };
+type Plan = { key: number; items: ShoppingItem[]; answer: string; household: Household };
+type LastRequest = { mode: string; image?: File; customPrompt?: string };
+
+const EXAMPLES = [
+  { label: 'Lista HEB · 4 personas · 7 días · $2,500', prompt: 'Haz una lista de compras para HEB para cuatro personas durante siete días con un presupuesto de $2,500' },
+  { label: 'Costco · 15 días', prompt: 'Haz una lista de compras para Costco para 15 días' },
+  { label: 'Básicos de la semana', prompt: 'Haz una lista de compras con los básicos de la semana' },
+];
+
 function inferMode(prompt: string) {
   const value = prompt.toLowerCase();
   if (/(lista|súper|super|heb|costco|walmart|soriana|comprar|compras)/.test(value)) return 'shopping';
@@ -24,32 +45,33 @@ function inferMode(prompt: string) {
   return 'general';
 }
 
-function validCategory(value: unknown): Category {
-  return CATEGORIES.includes(value as Category) ? value as Category : 'Otros';
-}
-
 export default function Assistant() {
-  const { pantry, recipes, preferences, weeks, leftovers, saveLeftover, deleteLeftover, generateSmartList, addGrocery } = useApp();
+  const { pantry, recipes, preferences, weeks, leftovers, groceries, saveLeftover, deleteLeftover, generateSmartList, addGroceryBatch } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
   const [items, setItems] = useState<AIItem[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
+  const [plan, setPlan] = useState<Plan | null>(null);
   const [answer, setAnswer] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [left, setLeft] = useState('');
   const [question, setQuestion] = useState('');
   const [lastMode, setLastMode] = useState('general');
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<Notice | null>(null);
   const file = useRef<HTMLInputElement>(null);
+  const lastRequest = useRef<LastRequest | null>(null);
+  const planCounter = useRef(0);
 
   async function ask(mode: string, image?: File, customPrompt?: string) {
+    lastRequest.current = { mode, image, customPrompt };
     setLoading(true);
     setError('');
     setAnswer('');
     setItems([]);
     setSelected([]);
-    setNotice('');
+    setPlan(null);
+    setNotice(null);
     setLastMode(mode);
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 32000);
@@ -60,14 +82,43 @@ export default function Assistant() {
         imageBase64 = await fileToBase64(image);
         mediaType = image.type;
       }
+      const household = mode === 'shopping' && customPrompt ? parseShoppingRequest(customPrompt) : undefined;
+      const payload = mode === 'shopping'
+        ? { mode, customPrompt, household, pantry, preferences }
+        : { mode, customPrompt, pantry, recipes, preferences, leftovers, recentMeals: weeks.slice(0, 6), imageBase64, mediaType };
       const response = await fetch('/.netlify/functions/home-assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({ mode, customPrompt, pantry, recipes, preferences, leftovers, recentMeals: weeks.slice(0, 6), imageBase64, mediaType }),
+        body: JSON.stringify(payload),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || `La IA respondió con error ${response.status}`);
+      if (!response.ok) {
+        const slow = response.status === 502 || response.status === 504;
+        throw new Error(data.error || (slow
+          ? 'El servidor tardó demasiado en responder. Intenta de nuevo con una lista más corta (por ejemplo, 3 días).'
+          : `La IA respondió con error ${response.status}`));
+      }
+
+      if (mode === 'shopping') {
+        const normalized = normalizeShoppingResponse(data);
+        if (!normalized.items.length) throw new Error('La IA no devolvió productos válidos. Intenta de nuevo o describe tu lista con más detalle.');
+        const parsed = household ?? { people: null, days: null, budget: null, store: null };
+        const fromServer = (data.household && typeof data.household === 'object' ? data.household : {}) as Partial<Household>;
+        planCounter.current += 1;
+        setPlan({
+          key: planCounter.current,
+          items: normalized.items,
+          answer: normalized.answer,
+          household: {
+            people: Number(fromServer.people) || parsed.people,
+            days: Number(fromServer.days) || parsed.days,
+            budget: Number(fromServer.budget) || parsed.budget,
+            store: fromServer.store || parsed.store,
+          },
+        });
+        return;
+      }
 
       const raw = [
         ...(Array.isArray(data.items) ? data.items : []),
@@ -79,7 +130,7 @@ export default function Assistant() {
         return {
           name: String(item.name || item.idea || item.title || 'Sugerencia'),
           why: item.why ? String(item.why) : '',
-          category: validCategory(item.category),
+          category: CATEGORIES.includes(item.category) ? item.category as Category : undefined,
           quantity: Number(item.quantity) > 0 ? Number(item.quantity) : 1,
           unit: item.unit ? String(item.unit) : 'pza',
           ingredients: Array.isArray(item.ingredients) ? item.ingredients.map(String) : [],
@@ -92,8 +143,10 @@ export default function Assistant() {
       if (!data.answer && normalized.length === 0) throw new Error('La IA no devolvió resultados útiles. Intenta formular la pregunta de otra manera.');
     } catch (requestError) {
       const message = requestError instanceof DOMException && requestError.name === 'AbortError'
-        ? 'La IA tardó demasiado en responder. Intenta nuevamente.'
-        : requestError instanceof Error ? requestError.message : 'No se pudo consultar la IA.';
+        ? 'La IA tardó demasiado en responder. Intenta nuevamente (si es una lista grande, prueba con menos días).'
+        : requestError instanceof TypeError
+          ? 'No hay conexión con el servidor. Revisa tu internet y vuelve a intentar.'
+          : requestError instanceof Error ? requestError.message : 'No se pudo consultar la IA.';
       setError(message);
     } finally {
       window.clearTimeout(timeout);
@@ -101,22 +154,31 @@ export default function Assistant() {
     }
   }
 
+  function runPrompt(text: string) {
+    setQuestion(text);
+    void ask(inferMode(text), undefined, text);
+  }
+
   async function addItems(indices: number[]) {
-    let added = 0;
+    const rows: NewGroceryRow[] = [];
     for (const index of indices) {
       const item = items[index];
       if (!item) continue;
       if (lastMode === 'cook' && item.ingredients?.length) {
-        for (const ingredient of item.ingredients) {
-          await addGrocery(ingredient, 'Despensa', 1, 'pza', 'ai-recipe');
-          added++;
-        }
+        for (const ingredient of item.ingredients) rows.push({ name: ingredient, category: guessCategory(ingredient), quantity: 1, unit: 'pza', source: 'ai-recipe' });
       } else {
-        await addGrocery(item.name, validCategory(item.category), item.quantity || 1, item.unit || 'pza', 'ai');
-        added++;
+        rows.push({ name: item.name, category: normalizeCategory(item.category, item.name), quantity: item.quantity || 1, unit: normalizeUnit(item.unit), source: 'ai' });
       }
     }
-    setNotice(`${added} ${added === 1 ? 'producto agregado' : 'productos agregados'} a Compras.`);
+    const result = await addGroceryBatch(rows);
+    if (result.error) return setNotice({ tone: 'error', text: result.error });
+    const dup = result.duplicates.length ? ` ${result.duplicates.length === 1 ? '1 ya estaba' : `${result.duplicates.length} ya estaban`} en tu lista.` : '';
+    setNotice({
+      tone: 'ok',
+      text: result.added > 0
+        ? `${result.added} ${result.added === 1 ? 'producto agregado' : 'productos agregados'} a Compras.${dup}`
+        : 'Esos productos ya estaban en tu lista de Compras.',
+    });
   }
 
   useEffect(() => {
@@ -138,19 +200,30 @@ export default function Assistant() {
     recognition.start();
   }
 
+  function retry() {
+    const request = lastRequest.current;
+    if (request) void ask(request.mode, request.image, request.customPrompt);
+  }
+
   return (
     <Page title="Alacena IA" subtitle="Pregunta usando tu despensa, menú y hábitos de compra">
-      <form className="assistant-command" onSubmit={(event) => { event.preventDefault(); if (question.trim()) void ask(inferMode(question), undefined, question.trim()); }}>
+      <form className="assistant-command" onSubmit={(event) => { event.preventDefault(); if (question.trim() && !loading) runPrompt(question.trim()); }}>
         <Sparkles size={21} />
-        <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ej. Haz una lista para HEB para toda la semana" />
-        <button type="button" className="icon-btn" onClick={() => voice('question')}><Mic size={19} /></button>
-        <button type="submit" className="primary icon"><Send size={18} /></button>
+        <input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ej. Haz una lista para HEB para toda la semana" aria-label="Pregunta para Alacena IA" />
+        <button type="button" className="icon-btn" onClick={() => voice('question')} aria-label="Dictar"><Mic size={19} /></button>
+        <button type="submit" className="primary icon" disabled={loading} aria-label="Enviar"><Send size={18} /></button>
       </form>
+
+      <div className="sl-examples" aria-label="Ejemplos">
+        {EXAMPLES.map(example => (
+          <button type="button" key={example.label} disabled={loading} onClick={() => runPrompt(example.prompt)}>{example.label}</button>
+        ))}
+      </div>
 
       <div className="assistant-actions">
         <button className="feature-btn" onClick={() => ask('cook')}><ChefHat /><strong>¿Qué cocinar hoy?</strong><span>Recetas con lo que ya tienes</span></button>
         <button className="feature-btn" onClick={() => ask('leftovers')}><Utensils /><strong>Aprovechar sobrantes</strong><span>Ideas para no desperdiciar</span></button>
-        <button className="feature-btn" onClick={async () => { const count = await generateSmartList(); setNotice(`Se agregaron ${count} faltantes del menú y productos bajos.`); }}><PackagePlus /><strong>Generar lista inteligente</strong><span>Menú menos lo que ya tienes</span></button>
+        <button className="feature-btn" onClick={async () => { const count = await generateSmartList(); setNotice({ tone: 'ok', text: `Se agregaron ${count} faltantes del menú y productos bajos.` }); }}><PackagePlus /><strong>Generar lista inteligente</strong><span>Menú menos lo que ya tienes</span></button>
         <button className="feature-btn" onClick={() => file.current?.click()}><Camera /><strong>Foto del refrigerador</strong><span>Detectar alimentos visibles</span></button>
         <input hidden ref={file} type="file" accept="image/*" capture="environment" onChange={(event) => event.target.files?.[0] && ask('fridge', event.target.files[0])} />
       </div>
@@ -165,11 +238,28 @@ export default function Assistant() {
         {leftovers.map((item) => <div className="simple-row" key={item.id}><span>{item.name}</span><button className="ghost danger" onClick={() => deleteLeftover(item.id)}>Quitar</button></div>)}
       </div>
 
-      {loading && <div className="loading"><Sparkles />Pensando…</div>}
-      {error && <div className="card ai-error"><strong>No pude responder</strong><p>{error}</p><button className="secondary small" onClick={() => question.trim() && ask(inferMode(question), undefined, question.trim())}>Intentar otra vez</button></div>}
-      {notice && <div className="ai-notice"><Check size={18} />{notice}<button className="ghost small" onClick={() => navigate('/grocery')}>Ver Compras</button></div>}
+      {loading && <div className="loading" role="status"><Sparkles />{lastMode === 'shopping' ? 'Armando tu lista… puede tardar unos segundos' : 'Pensando…'}</div>}
+      {error && <div className="card ai-error" role="alert"><strong>No pude responder</strong><p>{error}</p><button className="secondary small" onClick={retry}>Intentar otra vez</button></div>}
+      {notice && (
+        <div className={`ai-notice ${notice.tone === 'error' ? 'error' : ''}`} role={notice.tone === 'error' ? 'alert' : 'status'}>
+          {notice.tone === 'error' ? <AlertCircle size={18} /> : <Check size={18} />}{notice.text}
+          {notice.tone === 'ok' && <button className="ghost small" onClick={() => navigate('/lista')}>Ver Compras</button>}
+        </div>
+      )}
 
-      {(answer || items.length > 0) && <div className="card ai-results">
+      {plan && (
+        <SmartShoppingList
+          key={plan.key}
+          items={plan.items}
+          answer={plan.answer}
+          household={plan.household}
+          groceries={groceries}
+          onAdd={addGroceryBatch}
+          onViewList={() => navigate('/lista')}
+        />
+      )}
+
+      {!plan && (answer || items.length > 0) && <div className="card ai-results">
         <div className="ai-results-head">
           <div><h3>Respuesta de Alacena</h3>{answer && <p className="assistant-answer">{answer}</p>}</div>
           {items.length > 0 && <button className="primary small" disabled={selected.length === 0} onClick={() => addItems(selected)}><ShoppingCart size={17} />Agregar seleccionados ({selected.length})</button>}
