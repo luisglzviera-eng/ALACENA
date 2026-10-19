@@ -142,3 +142,9 @@
 
 .mn-chips button.on { background: var(--green); color: #fff; border-color: var(--green); }
 .mn-plan li small { color: var(--muted, #6b7a72); }
+
+/* Mi familia */
+.family-settings { display: grid; gap: 10px; }
+.fm-row { display: grid; gap: 6px; padding: 10px; border-radius: 14px; background: rgba(18,60,45,.05); }
+.fm-top { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; }
+.mn-people b { color: var(--green); }

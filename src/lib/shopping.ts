@@ -491,3 +491,40 @@ export function plannedMeals(days: MenuDaysMap | Record<string, any>): MealSlotI
   }
   return out;
 }
+
+/* ───────────── Familia (quién vive en casa) ───────────── */
+
+export type HouseholdKind = 'adulto' | 'niño' | 'niña' | 'bebé';
+export type HouseholdMember = { id: string; name: string; kind: HouseholdKind; notes: string };
+export const HOUSEHOLD_KINDS: HouseholdKind[] = ['adulto', 'niña', 'niño', 'bebé'];
+
+export const DEFAULT_HOUSEHOLD: HouseholdMember[] = [
+  { id: 'a1', name: 'Adulto 1', kind: 'adulto', notes: '' },
+  { id: 'a2', name: 'Adulto 2', kind: 'adulto', notes: '' },
+  { id: 'k1', name: 'Niña', kind: 'niña', notes: '' },
+  { id: 'b1', name: 'Bebé', kind: 'bebé', notes: '' },
+];
+
+/** Limpia la lista guardada; si no hay nada válido usa 2 adultos, 1 niña y 1 bebé. */
+export function normalizeHousehold(value: unknown): HouseholdMember[] {
+  if (!Array.isArray(value)) return DEFAULT_HOUSEHOLD.map(m => ({ ...m }));
+  const out: HouseholdMember[] = [];
+  value.slice(0, 12).forEach((raw: any, i) => {
+    const kind = HOUSEHOLD_KINDS.includes(raw?.kind) ? raw.kind : null;
+    if (!kind) return;
+    out.push({ id: String(raw.id || `m${i}`), name: String(raw.name ?? '').trim().slice(0, 30) || kind, kind, notes: String(raw.notes ?? '').trim().slice(0, 200) });
+  });
+  return out.length ? out : DEFAULT_HOUSEHOLD.map(m => ({ ...m }));
+}
+
+/** "2 adultos, 1 niña y 1 bebé" */
+export function householdSummary(list: HouseholdMember[]): string {
+  const count = (k: HouseholdKind) => list.filter(m => m.kind === k).length;
+  const parts: string[] = [];
+  const add = (n: number, one: string, many: string) => { if (n) parts.push(`${n} ${n === 1 ? one : many}`); };
+  add(count('adulto'), 'adulto', 'adultos'); add(count('niña'), 'niña', 'niñas'); add(count('niño'), 'niño', 'niños'); add(count('bebé'), 'bebé', 'bebés');
+  return parts.length > 1 ? `${parts.slice(0, -1).join(', ')} y ${parts[parts.length - 1]}` : parts[0] || '';
+}
+
+/** Personas que comen porciones normales (los bebés no cuentan para cantidades). */
+export const householdPortions = (list: HouseholdMember[]) => Math.max(1, list.filter(m => m.kind !== 'bebé').length);

@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import { Page } from '../components/UI';
 import SmartShoppingList from '../components/SmartShoppingList';
 import {
-  MENU_DAYS, MENU_SLOTS, SLOT_LABEL, expiryInfo, findDuplicate, findRecipeForMeal, mergeIngredients, normalizeShoppingResponse, parseIngredient, plannedMeals,
+  MENU_DAYS, MENU_SLOTS, householdPortions, householdSummary, normalizeHousehold, SLOT_LABEL, expiryInfo, findDuplicate, findRecipeForMeal, mergeIngredients, normalizeShoppingResponse, parseIngredient, plannedMeals,
   type MenuDaysMap, type MenuSlot, type ParsedIngredient, type ShoppingItem,
 } from '../lib/shopping';
 import type { MenuWeek, Recipe } from '../types';
@@ -74,7 +74,8 @@ export default function Menu() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [picker, setPicker] = useState<{ day: string; slot: Slot } | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [people, setPeople] = useState(4);
+  const household = useMemo(() => normalizeHousehold(preferences.household), [preferences.household]);
+  const people = householdPortions(household);
 
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -120,7 +121,7 @@ export default function Menu() {
     setAiLoading(true); setAiError(''); setAiPlan(null);
     try {
       const res = await postJSON('/.netlify/functions/generate-menu', {
-        prompt: aiPrompt.trim(), people, slots: aiSlots,
+        prompt: aiPrompt.trim(), people, slots: aiSlots, household: household.map(({ name, kind, notes }) => ({ name, kind, notes })),
         preferences: { diet_user: preferences.diet_user, diet_partner: preferences.diet_partner, kids_recipes: preferences.kids_recipes, budget_priority: preferences.budget_priority },
         savedRecipes: recipes.slice(0, 40).map(r => ({ name: r.name })),
         pantry: stockedPantry.slice(0, 50).map(p => ({ name: p.text })),
@@ -230,9 +231,8 @@ export default function Menu() {
           <div className="mn-chips" role="group" aria-label="Qué comidas incluir">
             {MENU_SLOTS.map(s => <button type="button" key={s} aria-pressed={aiSlots.includes(s)} className={aiSlots.includes(s) ? 'on' : ''} onClick={() => setAiSlots(cur => cur.includes(s) ? (cur.length > 1 ? cur.filter(x => x !== s) : cur) : [...cur, s])}>{aiSlots.includes(s) ? '✓ ' : ''}{SLOT_LABEL[s]}</button>)}
           </div>
-          <div className="mn-people"><span>Para</span>
-            <div className="sl-stepper"><button type="button" aria-label="Menos personas" onClick={() => setPeople(p => Math.max(1, p - 1))}>−</button><b className="pn-qty">{people} {people === 1 ? 'persona' : 'personas'}</b><button type="button" aria-label="Más personas" onClick={() => setPeople(p => Math.min(20, p + 1))}>+</button></div>
-          </div>
+          <div className="mn-people"><span>Para</span><b>{householdSummary(household)}</b><button type="button" className="ghost small" onClick={() => navigate('/ajustes')}>Cambiar</button></div>
+          {household.some(h => h.kind === 'bebé') && <small className="muted">El bebé no cuenta en las cantidades; la IA sugiere cosas aptas para su edad.</small>}
           <button type="button" className="primary" disabled={aiLoading} onClick={() => void generateWeek()}>{aiLoading ? 'Armando menú…' : 'Generar menú'}</button>
           {aiError && <div className="sl-error" role="alert"><AlertCircle size={18} /><div><strong>No pude armar el menú</strong><p>{aiError}</p></div><button type="button" className="secondary small" onClick={() => void generateWeek()}>Reintentar</button></div>}
           {aiPlan && (

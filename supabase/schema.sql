@@ -157,3 +157,5 @@ drop policy if exists "authenticated recipe photos" on storage.objects;
 create policy "authenticated recipe photos" on storage.objects
   for all to authenticated
   using (bucket_id = 'recipe-photos') with check (bucket_id = 'recipe-photos');
+-- ALACENA v8.9.1: guarda quién vive en casa (adultos, niños, bebé)
+alter table public.preferences add column if not exists household jsonb;

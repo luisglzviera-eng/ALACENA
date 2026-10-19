@@ -1,3 +1,8 @@
+# v8.9.1 — Mi familia
+- Ajustes > Mi familia: 2 adultos, niña y bebé (editable) con notas de cada quien.
+- El menú con IA usa la familia (ya no hay selector de personas); el bebé no cuenta en cantidades.
+- Requiere correr supabase/update_v8_9_familia.sql una vez.
+
 # v8.9.0 — Menú con más comidas
 - Cada día ahora tiene Desayuno, Comida, Snack, Lunch de la niña y Cena.
 - "Armar semana con IA" deja elegir qué comidas incluir.

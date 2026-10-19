@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { fileToBase64 } from '../lib/utils';
 import { Page } from '../components/UI';
 import { CATEGORIES, type Category } from '../types';
+import { HOUSEHOLD_KINDS, householdSummary, normalizeHousehold, type HouseholdKind, type HouseholdMember } from '../lib/shopping';
 import {
   currentPushSubscription,
   disablePush,
@@ -46,6 +47,7 @@ const defaultDeviceSettings: DeviceSettings = {
 export default function Settings() {
   const { preferences, savePreferences, recurring, saveRecurring } = useApp();
   const [form, setForm] = useState(preferences);
+  const [household, setHousehold] = useState<HouseholdMember[]>(() => normalizeHousehold(preferences.household));
   const [loading, setLoading] = useState('');
   const [text, setText] = useState('');
   const [cat, setCat] = useState<Category>('Despensa');
@@ -106,7 +108,7 @@ export default function Settings() {
   const saveAll = async () => {
     setPushBusy(true); setPushMessage('');
     try {
-      await savePreferences(form);
+      await savePreferences({ ...form, household: normalizeHousehold(household) });
       if (pushEnabled) await updateDevicePushSettings(device);
       setPushMessage('Preferencias guardadas.');
     } catch (error) {
@@ -118,6 +120,23 @@ export default function Settings() {
     setDevice((current) => ({ ...current, [key]: value }));
 
   return <Page title="Preferencias" subtitle="Dietas, presupuesto, alertas y rutinas">
+    <div className="card settings family-settings">
+      <h3>Mi familia</h3>
+      <small>Quién come en casa. La IA arma menús y recetas para cada uno (por ejemplo, el bebé y la niña).</small>
+      {household.map((m, i) => (
+        <div className="fm-row" key={m.id}>
+          <div className="fm-top">
+            <input value={m.name} aria-label="Nombre" onChange={e => setHousehold(household.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+            <select value={m.kind} aria-label="Tipo" onChange={e => setHousehold(household.map((x, j) => j === i ? { ...x, kind: e.target.value as HouseholdKind } : x))}>{HOUSEHOLD_KINDS.map(k => <option key={k} value={k}>{k}</option>)}</select>
+            <button type="button" className="icon-btn" aria-label={`Quitar a ${m.name}`} onClick={() => setHousehold(household.filter((_, j) => j !== i))}>✕</button>
+          </div>
+          <input value={m.notes} placeholder={m.kind === 'bebé' ? 'Ej. 10 meses, papillas, sin miel ni sal' : 'Alergias, lo que no come, gustos…'} aria-label={`Notas de ${m.name}`} onChange={e => setHousehold(household.map((x, j) => j === i ? { ...x, notes: e.target.value } : x))} />
+        </div>
+      ))}
+      <button type="button" className="secondary small" onClick={() => setHousehold([...household, { id: `m${Date.now()}`, name: '', kind: 'adulto', notes: '' }])}>+ Agregar persona</button>
+      <small>Resumen: {householdSummary(household) || 'nadie'}. Las dietas de los adultos se escriben abajo.</small>
+    </div>
+
     <div className="card settings">
       <h3>Planes de alimentación</h3>
       <label>Persona 1<input type="file" accept="image/*" onChange={(event) => parse(event.target.files?.[0], 'user')} /></label>

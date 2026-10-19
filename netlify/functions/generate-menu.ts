@@ -20,6 +20,7 @@ export const handler: Handler = async event => {
     if (!slots.length) slots.push('lunch', 'dinner');
     const shape = '{' + slots.map(s => `"${s}":"platillo"`).join(',') + '}';
     const slotText = slots.map(s => s === 'kids' ? 'kids = lunch escolar de la niña (se lleva a la escuela: frío, fácil de empacar, sin picante)' : s === 'snack' ? 'snack = colación ligera' : `${s} = ${SLOT_LABEL[s].toLowerCase()}`).join('; ');
+    const family = (Array.isArray(body.household) ? body.household : []).slice(0, 12).map((x: any) => `${String(x?.name ?? '').slice(0, 30)} (${String(x?.kind ?? '').slice(0, 10)}${x?.notes ? ': ' + String(x.notes).slice(0, 120) : ''})`).filter((x: string) => x.length > 3);
     const keep = (Array.isArray(body.keep) ? body.keep : []).slice(0, 14).map((x: unknown) => String(x).slice(0, 60)).filter(Boolean);
 
     const prompt = [
@@ -28,6 +29,7 @@ export const handler: Handler = async event => {
       `Arma el menú de una semana (7 días) para ${people} personas con estas comidas por día: ${slotText}. Cada platillo es solo el NOMBRE (máximo 6 palabras), sin descripción.`,
       request ? `Pedido de la persona: ${request}` : '',
       `Dieta persona 1: ${prefs.diet_user || 'sin restricciones indicadas'}. Dieta persona 2: ${prefs.diet_partner || 'sin restricciones indicadas'}. TODOS los platillos deben respetar AMBAS dietas.`,
+      family.length ? `Integrantes de la familia: ${family.join('; ')}. Respeta alergias y notas de cada quien; si hay bebé, evita miel, sal en exceso, picante y alimentos que sean riesgo de atragantamiento.` : '',
       prefs.kids_recipes ? 'Hay niños: incluye varias opciones sencillas y poco picantes que les gusten.' : '',
       prefs.budget_priority ? 'Prioriza ingredientes económicos y de temporada; evita cortes caros.' : '',
       'Ingredientes que se consigan en HEB, Calimax o Calii. Varía proteínas y evita repetir platillos. Entre semana prefiere cosas rápidas.',
