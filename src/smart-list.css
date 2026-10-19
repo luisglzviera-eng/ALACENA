@@ -189,3 +189,15 @@
 .dc-actions { display: grid; gap: 8px; }
 .dc-msg { margin: 0 16px 12px; padding: 10px 12px; border-radius: 12px; font-size: 13.5px; background: #e6f1e9; color: var(--green); }
 .dc-msg.error { background: #f9e3de; color: #8c2f1d; }
+
+/* Carga de despensa con fotos */
+.pn-head-actions { display: flex; gap: 8px; }
+.pp-loader { display: grid; gap: 10px; margin-bottom: 14px; }
+.pp-head { display: flex; justify-content: space-between; align-items: center; }
+.pp-row { display: grid; grid-template-columns: 1fr 64px 84px; gap: 6px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.pp-row.check { background: #fff6dd; border-radius: 12px; padding: 8px; }
+.pp-name { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.pp-name input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--green); flex: none; }
+.pp-name input:not([type=checkbox]) { min-width: 0; flex: 1; }
+.pp-cat { grid-column: 1 / -1; }
+.pp-note { grid-column: 1 / -1; color: #6b4a00; font-size: 12.5px; }

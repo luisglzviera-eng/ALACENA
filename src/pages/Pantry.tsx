@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Barcode, Check, Minus, Pencil, Plus, Search, ShoppingCart, Trash2, X } from 'lucide-react';
+import { AlertCircle, Barcode, Camera, Check, Minus, Pencil, Plus, Search, ShoppingCart, Trash2, X } from 'lucide-react';
 import { Empty, Page } from '../components/UI';
+import PantryPhotoLoader from '../components/PantryPhotoLoader';
 import { useApp } from '../context/AppContext';
 import { CATEGORIES, type Category, type PantryItem } from '../types';
 import { UNITS, expiryInfo, guessCategory, restockQuantity, stepForUnit, type NewGroceryRow } from '../lib/shopping';
@@ -20,6 +21,7 @@ export default function Pantry() {
   const [form, setForm] = useState<Form | null>(null);
   const [catTouched, setCatTouched] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [loader, setLoader] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'ok' | 'error'; text: string; offer?: PantryItem } | null>(null);
 
   const info = (item: PantryItem) => expiryInfo(item.expires_on);
@@ -95,13 +97,15 @@ export default function Pantry() {
   ];
 
   return (
-    <Page title="Despensa inteligente" subtitle={`${pantry.length} productos registrados`} action={<button className="primary small" onClick={openNew}><Plus size={17} />Agregar</button>}>
+    <Page title="Despensa inteligente" subtitle={`${pantry.length} productos registrados`} action={<div className="pn-head-actions"><button className="secondary small" onClick={() => setLoader(o => !o)}><Camera size={17} />Fotos</button><button className="primary small" onClick={openNew}><Plus size={17} />Agregar</button></div>}>
       {notice && (
         <div className={`ai-notice ${notice.tone === 'error' ? 'error' : ''}`} role="status">
           {notice.tone === 'ok' ? <Check size={18} /> : <AlertCircle size={18} />}{notice.text}
           {notice.offer && <button className="ghost small" onClick={() => void sendToList([notice.offer as PantryItem])}>Agregar a Compras</button>}
         </div>
       )}
+
+      {loader && <PantryPhotoLoader pantry={pantry} savePantry={savePantry} onClose={() => setLoader(false)} onDone={text => { setLoader(false); setNotice({ tone: 'ok', text }); }} />}
 
       <div className="pn-tiles">
         {tiles.map(tile => (

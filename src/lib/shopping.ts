@@ -713,3 +713,39 @@ export function planDeductions(
 /** Productos de consumo libre (se acaban cuando a alguien se le antoja): se ajustan con un conteo rápido, no por receta. */
 export const isStapleName = (name: string) =>
   /\b(leche|huevo|yogurt|yogur|pan|tortilla|fruta|manzana|platano|plátano|jamon|jamón|queso|mantequilla|cereal|galleta|jugo)/i.test(strip(String(name).toLowerCase()));
+
+/* ───────────── Carga inicial de la despensa con fotos ───────────── */
+
+export type PantryPhotoItem = { name: string; category: Category; quantity: number; unit: string; sure: boolean };
+
+/** Limpia lo que devuelve la IA al mirar una foto del refri/alacena. */
+export function normalizePantryPhotoResponse(data: unknown): PantryPhotoItem[] {
+  const src = (data && typeof data === 'object' ? data : {}) as Record<string, any>;
+  const out: PantryPhotoItem[] = [];
+  for (const raw of Array.isArray(src.items) ? src.items.slice(0, 80) : []) {
+    const name = String(raw?.name ?? '').replace(/\s+/g, ' ').trim().slice(0, 70);
+    if (!name) continue;
+    const q = Number(raw?.quantity);
+    const quantity = Number.isFinite(q) && q > 0 ? Math.round(q * 1000) / 1000 : 1;
+    const unit = normalizeUnit(raw?.unit);
+    const sure = !(raw?.estimated === true || String(raw?.estimated).toLowerCase() === 'true' || raw?.sure === false);
+    out.push({ name, category: normalizeCategory(raw?.category, name), quantity, unit, sure });
+  }
+  return out;
+}
+
+/** Junta lo repetido entre varias fotos (misma cosa y unidad): suma cantidades y queda "sin certeza" si alguna lo estaba. */
+export function mergePhotoItems(list: PantryPhotoItem[]): PantryPhotoItem[] {
+  const groups: Array<{ keys: Set<string>; item: PantryPhotoItem; n: number }> = [];
+  for (const item of list) {
+    const keys = nameKeys(item.name);
+    const found = groups.find(g => g.item.unit === item.unit && [...keys].some(k => g.keys.has(k)));
+    if (found) {
+      found.item.quantity = Math.round((found.item.quantity + item.quantity) * 1000) / 1000;
+      found.item.sure = found.item.sure && item.sure; found.n += 1;
+      keys.forEach(k => found.keys.add(k));
+    } else groups.push({ keys: new Set(keys), item: { ...item }, n: 1 });
+  }
+  // Un mismo producto en 2+ fotos puede ser el mismo (fotos que se traslapan): pide confirmar.
+  return groups.map(g => ({ ...g.item, sure: g.n > 1 ? false : g.item.sure }));
+}

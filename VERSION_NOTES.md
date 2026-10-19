@@ -1,3 +1,8 @@
+# v8.12.0 — Carga inicial de la despensa con fotos
+- Despensa → botón "Fotos": eliges hasta 8 fotos (refri por repisa, congelador, alacena); la IA lista lo que ve.
+- Revisas nombre, cantidad, unidad y categoría; lo estimado sale en amarillo para confirmar.
+- Lo repetido entre fotos se junta; lo que ya tienes viene desmarcado. Las cantidades de fotos son estimaciones. No requiere SQL.
+
 # v8.11.0 — Cerrar el día (descuento del inventario)
 - Tarjeta en Inicio: confirma lo que sí cocinaron hoy; resta de la despensa los ingredientes de las recetas (convierte g↔kg, ml↔L, sin pasarse de lo que hay).
 - Lo que no puede calcular (unidades distintas, sin receta guardada) se avisa y no se toca solo.
