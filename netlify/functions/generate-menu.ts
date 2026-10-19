@@ -32,7 +32,7 @@ export const handler: Handler = async event => {
       family.length ? `Integrantes de la familia: ${family.join('; ')}. Respeta alergias y notas de cada quien; si hay bebé, evita miel, sal en exceso, picante y alimentos que sean riesgo de atragantamiento.` : '',
       prefs.kids_recipes ? 'Hay niños: incluye varias opciones sencillas y poco picantes que les gusten.' : '',
       prefs.budget_priority ? 'Prioriza ingredientes económicos y de temporada; evita cortes caros.' : '',
-      'Ingredientes que se consigan en HEB, Calimax o Calii. Varía proteínas y evita repetir platillos. Entre semana prefiere cosas rápidas.',
+      'Ingredientes que se consigan en HEB, Costco, Sam’s o Calii. Varía proteínas y evita repetir platillos. Entre semana prefiere cosas rápidas.',
       saved.length ? `Usa recetas ya guardadas cuando encajen (nombre exacto): ${saved.join(', ')}.` : '',
       expiring.length ? `Aprovecha primero lo que va a caducar: ${expiring.join(', ')}.` : '',
       pantry.length ? `En la despensa hay: ${pantry.join(', ')}.` : '',

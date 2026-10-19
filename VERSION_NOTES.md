@@ -1,3 +1,9 @@
+# v8.10.1 — Tickets de Costco, Sam's y Calii
+- Tiendas: HEB, Costco, Sam's, Calii, Otro (se quitó Calimax).
+- El lector separa lo que no es comida (limpieza, papel, higiene, bebé, mascotas, hogar, etc.): no se suma a la despensa y puedes cambiarlo renglón por renglón.
+- Reportes: nuevo bloque "Comida y otros productos".
+- No requiere SQL.
+
 # v8.10.0 — Tickets y reportes de gasto
 - Lector de tickets HEB/Calii/Calimax (foto o captura): productos, cantidades, precios, fecha y tienda; revisión editable.
 - Avisos: total que no cuadra, ticket duplicado; guardado con errores claros y sin tickets a medias.

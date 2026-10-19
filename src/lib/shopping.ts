@@ -183,7 +183,7 @@ function parseMoney(raw: string, thousands: boolean): number | null {
 
 const STORES: Array<[RegExp, string]> = [
   [/\bheb\b/, 'HEB'], [/\bcostco\b/, 'Costco'], [/\bwalmart\b/, 'Walmart'], [/\bsoriana\b/, 'Soriana'],
-  [/\bcalimax\b/, 'Calimax'], [/\bcalii\b/, 'Calii'], [/\bsam'?s\b/, "Sam's"], [/\bchedraui\b/, 'Chedraui'],
+  [/\bcalii\b/, 'Calii'], [/\bsam'?s\b/, "Sam's"], [/\bchedraui\b/, 'Chedraui'],
   [/\bla comer\b/, 'La Comer'], [/\baurrera\b/, 'Bodega Aurrera'],
 ];
 
@@ -531,8 +531,11 @@ export const householdPortions = (list: HouseholdMember[]) => Math.max(1, list.f
 
 /* ───────────── Tickets y gasto ───────────── */
 
-export const RECEIPT_STORES = ['HEB', 'Calii', 'Calimax', 'Otro'] as const;
-export type ReceiptItem = { name: string; category: Category; quantity: number | null; unit_price: number | null; total_price: number };
+export const RECEIPT_STORES = ['HEB', 'Costco', "Sam's", 'Calii', 'Otro'] as const;
+/** Categorías que NO son comida: no van a la despensa. */
+export const NON_FOOD_CATEGORIES: string[] = ['Limpieza y hogar', 'Otros'];
+export const isFoodCategory = (category: string) => !NON_FOOD_CATEGORIES.includes(category);
+export type ReceiptItem = { name: string; category: Category; quantity: number | null; unit_price: number | null; total_price: number; is_food: boolean };
 export type ReceiptRead = { store: string | null; date: string | null; items: ReceiptItem[]; total: number; itemsSum: number };
 
 const money2 = (v: unknown) => {
@@ -555,10 +558,15 @@ export function normalizeReceiptResponse(data: unknown): ReceiptRead {
     let total_price = money2(raw?.total_price);
     if (total_price <= 0 && unit_price) total_price = money2(unit_price * (quantity ?? 1));
     if (total_price <= 0) continue; // descuentos sueltos o renglones sin precio
-    items.push({ name, category: normalizeCategory(raw?.category, name), quantity, unit_price, total_price });
+    let category = normalizeCategory(raw?.category, name);
+    const said = raw?.is_food === false || String(raw?.is_food).toLowerCase() === 'false' ? false : raw?.is_food === true || String(raw?.is_food).toLowerCase() === 'true' ? true : null;
+    // La IA manda is_food; si se contradice con la categoría, manda is_food (y la categoría se ajusta a una válida).
+    if (said === false && isFoodCategory(category)) category = 'Otros';
+    if (said === true && !isFoodCategory(category)) category = 'Despensa';
+    items.push({ name, category, quantity, unit_price, total_price, is_food: isFoodCategory(category) });
   }
   const storeText = String(src.store ?? '').toLowerCase();
-  const store = /heb|h-e-b/.test(storeText) ? 'HEB' : /calii/.test(storeText) ? 'Calii' : /calimax/.test(storeText) ? 'Calimax' : storeText.trim() ? 'Otro' : null;
+  const store = /heb|h-e-b/.test(storeText) ? 'HEB' : /costco/.test(storeText) ? 'Costco' : /\bsam.?s\b/.test(storeText) ? "Sam's" : /calii/.test(storeText) ? 'Calii' : storeText.trim() ? 'Otro' : null;
   const dateText = String(src.date ?? '').trim();
   const dm = dateText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   const date = dm && +dm[2] >= 1 && +dm[2] <= 12 && +dm[3] >= 1 && +dm[3] <= 31 ? dateText : null;
@@ -579,6 +587,7 @@ export type MonthReport = {
   byStore: Array<{ name: string; value: number }>;
   byCategory: Array<{ name: string; value: number }>;
   topItems: Array<{ name: string; value: number; times: number }>;
+  food: number; nonFood: number;
 };
 
 export function monthKey(date = new Date()) {
@@ -593,11 +602,13 @@ export function monthReport(
   const list = purchases.filter(p => String(p.purchase_date).startsWith(month));
   const sum = (m: Map<string, number>, k: string, v: number) => m.set(k, (m.get(k) || 0) + v);
   const stores = new Map<string, number>(), cats = new Map<string, number>();
+  let food = 0, nonFood = 0;
   const prods: Array<{ keys: Set<string>; name: string; value: number; times: number }> = [];
   for (const p of list) {
     sum(stores, p.store || 'Otro', Number(p.total));
     for (const it of p.purchase_items || []) {
       sum(cats, it.category || 'Otros', Number(it.total_price));
+      if (isFoodCategory(it.category || 'Otros')) food += Number(it.total_price); else nonFood += Number(it.total_price);
       const keys = nameKeys(it.name);
       let cur = prods.find(x => [...keys].some(k => x.keys.has(k)));
       if (!cur) { cur = { keys: new Set(keys), name: it.name, value: 0, times: 0 }; prods.push(cur); } else keys.forEach(k => cur!.keys.add(k));
@@ -607,6 +618,7 @@ export function monthReport(
   const rank = (m: Map<string, number>) => [...m].map(([name, value]) => ({ name, value: Math.round(value * 100) / 100 })).sort((a, b) => b.value - a.value);
   const total = Math.round(list.reduce((s, p) => s + Number(p.total), 0) * 100) / 100;
   return {
+    food: Math.round(food * 100) / 100, nonFood: Math.round(nonFood * 100) / 100,
     month, total, count: list.length, average: list.length ? Math.round((total / list.length) * 100) / 100 : 0,
     byStore: rank(stores), byCategory: rank(cats),
     topItems: prods.map(p => ({ name: p.name, times: p.times, value: Math.round(p.value * 100) / 100 })).sort((a, b) => b.value - a.value).slice(0, 5),

@@ -30,7 +30,7 @@ export const handler: Handler = async event => {
       request ? `Pedido de la persona: ${request}` : '',
       `Dieta persona 1: ${prefs.diet_user || 'sin restricciones indicadas'}. Dieta persona 2: ${prefs.diet_partner || 'sin restricciones indicadas'}. CADA receta debe respetar AMBAS dietas; en "fits" explica en una frase cómo cumple con cada una.`,
       prefs.budget_priority ? 'Prioriza ingredientes económicos y de temporada; evita cortes caros y productos gourmet.' : '',
-      'Usa ingredientes que se consigan en HEB, Calimax o Calii. Cada ingrediente lleva cantidad y unidad (pza, kg, g, L, ml, paquete, lata, bolsa, caja, docena) y categoría (Frutas y verduras, Carnes y pescado, Lácteos y huevos, Despensa, Limpieza y hogar, Otros).',
+      'Usa ingredientes que se consigan en HEB, Costco, Sam’s o Calii. Cada ingrediente lleva cantidad y unidad (pza, kg, g, L, ml, paquete, lata, bolsa, caja, docena) y categoría (Frutas y verduras, Carnes y pescado, Lácteos y huevos, Despensa, Limpieza y hogar, Otros).',
       '"estimated_cost" es el costo total aproximado en pesos MXN: es una estimación, no un precio real.',
       'Pasos cortos: máximo 6 pasos de una oración cada uno. No repitas recetas ya guardadas.',
       pantry.length ? `En la despensa hay: ${pantry.join(', ')}.` : '',

@@ -48,6 +48,11 @@ export default function Reports() {
       {report.count === 0 ? <Empty>No hay tickets en este mes. Guarda uno en la pestaña Tickets.</Empty> : (
         <>
           <div className="card chart">
+            <h3>Comida y otros productos</h3>
+            <p className="category-total"><span>Comida</span><b>{money(report.food)}</b></p>
+            <p className="category-total"><span>No es comida (limpieza, hogar, bebé, otros)</span><b>{money(report.nonFood)}</b></p>
+          </div>
+          <div className="card chart">
             <h3>Por tienda</h3>
             {report.byStore.map(s => <p className="category-total" key={s.name}><span>{s.name}</span><b>{money(s.value)}</b></p>)}
           </div>
