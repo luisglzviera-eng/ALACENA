@@ -416,3 +416,70 @@ export const restockQuantity = (quantity: number, lowAt: number) =>
 
 /** Paso razonable del botón +/− según la unidad. */
 export const stepForUnit = (unit: string) => (unit === 'g' || unit === 'ml' ? 100 : unit === 'kg' || unit === 'L' ? 0.5 : 1);
+
+/* ───────────── Menú semanal ───────────── */
+
+export const MENU_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as const;
+export type MenuDaysMap = Record<string, { lunch: string; dinner: string }>;
+
+/** Limpia el menú que devuelve la IA: solo los 7 días, textos cortos, sin vacíos inventados. */
+export function normalizeMenuResponse(data: unknown): { answer: string; days: MenuDaysMap; filled: number } {
+  const source = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
+  const raw = (source.days && typeof source.days === 'object' ? source.days : {}) as Record<string, any>;
+  const days: MenuDaysMap = {};
+  let filled = 0;
+  for (const day of MENU_DAYS) {
+    const entry = raw[day] ?? raw[strip(day)] ?? raw[day.toLowerCase()] ?? raw[strip(day).toLowerCase()] ?? {};
+    const clean = (v: unknown) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    const lunch = clean(entry.lunch ?? entry.comida);
+    const dinner = clean(entry.dinner ?? entry.cena);
+    days[day] = { lunch, dinner };
+    filled += (lunch ? 1 : 0) + (dinner ? 1 : 0);
+  }
+  return { answer: typeof source.answer === 'string' ? source.answer.trim() : '', days, filled };
+}
+
+/** Busca entre las recetas guardadas la que corresponde al texto de una comida del menú. */
+export function findRecipeForMeal<T extends { name: string }>(recipes: T[], meal: string): T | null {
+  const wanted = nameKeys(meal);
+  if (!wanted.size) return null;
+  for (const recipe of recipes) {
+    const keys = nameKeys(recipe.name);
+    for (const key of wanted) if (keys.has(key)) return recipe;
+  }
+  const text = [...wanted][0];
+  if (text.length >= 5) {
+    for (const recipe of recipes) {
+      const rn = [...nameKeys(recipe.name)][0];
+      if (rn && rn.length >= 5 && (text.includes(rn) || rn.includes(text))) return recipe;
+    }
+  }
+  return null;
+}
+
+/** Junta ingredientes repetidos de varias recetas (2 jitomates + 3 jitomates = 5). Solo suma si la unidad coincide. */
+export function mergeIngredients(list: ParsedIngredient[]): ParsedIngredient[] {
+  const groups: Array<{ keys: Set<string>; item: ParsedIngredient }> = [];
+  for (const item of list) {
+    const keys = nameKeys(item.name);
+    const found = groups.find(g => g.item.unit === item.unit && [...keys].some(k => g.keys.has(k)));
+    if (found) {
+      found.item.quantity = normalizeQuantity(found.item.quantity + item.quantity);
+      keys.forEach(k => found.keys.add(k));
+    } else groups.push({ keys: new Set(keys), item: { ...item } });
+  }
+  return groups.map(g => g.item);
+}
+
+export type MealSlotInfo = { day: string; slot: 'lunch' | 'dinner'; text: string };
+
+export function plannedMeals(days: MenuDaysMap | Record<string, any>): MealSlotInfo[] {
+  const out: MealSlotInfo[] = [];
+  for (const day of MENU_DAYS) {
+    for (const slot of ['lunch', 'dinner'] as const) {
+      const text = String(days?.[day]?.[slot] ?? '').trim();
+      if (text) out.push({ day, slot, text });
+    }
+  }
+  return out;
+}

@@ -1,3 +1,13 @@
+# ALACENA 8.8.0 — Sprint 4: Menú semanal funcional
+
+- Escribir una comida ya NO guarda por cada letra: se guarda al salir del campo (o Enter). Antes la pantalla podía perder letras y saturaba Supabase. Dos comidas seguidas no se pisan.
+- Botón 📖 en cada comida: elige entre tus recetas guardadas (con buscador) o pide "Ideas con IA" y toca una para ponerla. Ya no se muestran ideas inventadas cuando falla la IA: se muestra el error con reintento.
+- "Armar semana con IA": menú de 7 días (comida y cena) que respeta las dietas de Ajustes, usa tus recetas, aprovecha lo que va a caducar y la despensa. Vista previa y tú decides: "Aplicar solo a los vacíos" (no toca lo que ya escribiste), "Reemplazar todo" o "Descartar".
+- "Lista de compras del menú": junta los ingredientes de las recetas guardadas (suma lo repetido, ej. 2+2 jitomates), quita lo que ya tienes en la despensa, calcula con IA los platillos que no son receta guardada, marca "Ya está en Compras" y te deja elegir/editar cantidades antes de agregar.
+- Archivar pide confirmación y crea la semana nueva; en el historial, "Usar de nuevo" copia un menú anterior a la semana actual.
+- Errores reales de Supabase en pantalla (sin perder lo escrito).
+- Nueva función Netlify: generate-menu. No cambia el esquema de Supabase ni las variables.
+
 # ALACENA 8.7.0 — Sprint 3: Despensa funcional
 
 - Botones − / + en cada producto para ajustar la cantidad (paso según unidad: 1 pza, 0.5 kg/L, 100 g/ml). Se guarda al instante.
