@@ -1,3 +1,9 @@
+# v8.11.0 — Cerrar el día (descuento del inventario)
+- Tarjeta en Inicio: confirma lo que sí cocinaron hoy; resta de la despensa los ingredientes de las recetas (convierte g↔kg, ml↔L, sin pasarse de lo que hay).
+- Lo que no puede calcular (unidades distintas, sin receta guardada) se avisa y no se toca solo.
+- Básicos de consumo libre (leche, huevos, pan…): conteo rápido con + y −.
+- El día queda cerrado para los dos celulares (no se descuenta dos veces). No requiere SQL.
+
 # v8.10.4 — Piezas vs. contenido
 - Envases individuales (yogurt 70 g, leche 1 L): la despensa guarda las piezas (4 pza) y la presentación queda en el nombre.
 - Paquetes con varias piezas adentro (huevo 30 PZ): se multiplica (30 pza).

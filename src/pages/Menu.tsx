@@ -162,7 +162,9 @@ export default function Menu() {
 
   async function reuse(week: MenuWeek) {
     if (planned.length > 0 && !window.confirm('Esto reemplaza el menú de esta semana. ¿Continuar?')) return;
-    const { error } = await saveWeekDays(week.days);
+    const fresh: MenuDaysMap = {};
+    for (const day of MENU_DAYS) { const { closed: _c, ...slots } = (week.days[day] || {}) as Record<string, string>; fresh[day] = slots; }
+    const { error } = await saveWeekDays(fresh as any);
     setDrafts({});
     setNotice(error ? { tone: 'error', text: error } : { tone: 'ok', text: 'Se copió ese menú a esta semana.' });
   }

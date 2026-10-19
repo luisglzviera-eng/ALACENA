@@ -172,3 +172,20 @@
 .tk-total { display: grid; gap: 4px; font-weight: 700; font-size: 13px; }
 .tk-del { color: #8c2f1d; }
 @media (max-width: 620px) { .tk-row { grid-template-columns: 1fr 1fr 36px; } .tk-row > input:first-child { grid-column: 1 / 3; } .tk-row > select:nth-of-type(1) { grid-column: 1 / 4; } }
+
+/* Cerrar el día */
+.dc-card { padding: 0; margin: 14px 0; overflow: hidden; }
+.dc-head { width: 100%; display: flex; align-items: center; gap: 12px; border: 0; background: transparent; padding: 14px 16px; text-align: left; }
+.dc-head > span:nth-child(2) { display: grid; flex: 1; }
+.dc-head small { color: var(--muted); font-weight: 400; }
+.dc-icon { width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center; background: rgba(201,154,46,.18); color: var(--green); }
+.dc-body { display: grid; gap: 10px; padding: 0 16px 16px; }
+.dc-meal { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.dc-meal input { width: 20px; height: 20px; accent-color: var(--green); margin-top: 1px; }
+.dc-preview { display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; background: rgba(18,60,45,.05); font-size: 13.5px; }
+.dc-preview p { display: flex; justify-content: space-between; margin: 0; padding: 4px 0; border-top: 1px solid var(--line); }
+.dc-staples { display: grid; gap: 8px; }
+.dc-staple { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; }
+.dc-actions { display: grid; gap: 8px; }
+.dc-msg { margin: 0 16px 12px; padding: 10px 12px; border-radius: 12px; font-size: 13.5px; background: #e6f1e9; color: var(--green); }
+.dc-msg.error { background: #f9e3de; color: #8c2f1d; }

@@ -1,7 +1,7 @@
 {
   "name": "alacena",
   "private": true,
-  "version": "8.10.4",
+  "version": "8.11.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

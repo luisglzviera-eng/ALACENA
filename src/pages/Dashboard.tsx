@@ -15,6 +15,7 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DemoBanner, Page } from '../components/UI';
 import { useApp } from '../context/AppContext';
+import DayClose from '../components/DayClose';
 import { money } from '../lib/utils';
 
 const suggestions = [
@@ -72,6 +73,8 @@ export default function Dashboard() {
           <div className="hero-photo-note"><Sparkles size={16} /><span>Ideas basadas en tu despensa</span></div>
         </div>
       </section>
+
+      <DayClose defaultOpen={new Date().getHours() >= 17} />
 
       <div className="metric-grid smart-metrics">
         <Link className="metric-card" to="/lista">

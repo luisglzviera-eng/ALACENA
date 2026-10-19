@@ -649,3 +649,67 @@ export function monthReport(
     topItems: prods.map(p => ({ name: p.name, times: p.times, value: Math.round(p.value * 100) / 100 })).sort((a, b) => b.value - a.value).slice(0, 5),
   };
 }
+
+/* ───────────── Cierre del día: descontar lo cocinado de la despensa ───────────── */
+
+/** Convierte entre unidades compatibles (g↔kg, ml↔L, docena→pza). null si no se puede. */
+export function convertQuantity(q: number, from: string, to: string): number | null {
+  if (from === to) return q;
+  const grams: Record<string, number> = { g: 1, kg: 1000 };
+  const mls: Record<string, number> = { ml: 1, L: 1000 };
+  if (from in grams && to in grams) return (q * grams[from]) / grams[to];
+  if (from in mls && to in mls) return (q * mls[from]) / mls[to];
+  if (from === 'docena' && to === 'pza') return q * 12;
+  if (from === 'pza' && to === 'docena') return q / 12;
+  return null;
+}
+
+export type DeductionLine = {
+  name: string; needed: number; unit: string;
+  itemId: string | null; itemName: string | null; take: number; takeUnit: string;
+  status: 'ok' | 'short' | 'missing' | 'unit';
+};
+
+/**
+ * Qué se descuenta de la despensa por las comidas cocinadas. Junta ingredientes repetidos, busca cada uno en la despensa
+ * (sin acentos ni plurales), convierte unidades y nunca descuenta más de lo que hay.
+ * 'unit' = hay en despensa pero en otra unidad (ej. receta en gramos, despensa en piezas): no se toca solo.
+ */
+export function planDeductions(
+  meals: string[],
+  recipes: Array<{ name: string; ingredients: string[] }>,
+  pantry: Array<{ id: string; name: string; quantity: number; unit: string }>,
+): { lines: DeductionLine[]; withoutRecipe: string[] } {
+  const withoutRecipe: string[] = [];
+  const parsed: ParsedIngredient[] = [];
+  for (const meal of meals) {
+    const recipe = findRecipeForMeal(recipes, meal);
+    if (!recipe) { withoutRecipe.push(meal); continue; }
+    for (const line of recipe.ingredients) { const p = parseIngredient(line); if (p) parsed.push(p); }
+  }
+  const left = new Map(pantry.map(p => [p.id, Number(p.quantity)]));
+  const lines: DeductionLine[] = [];
+  for (const ing of mergeIngredients(parsed)) {
+    const keys = nameKeys(ing.name);
+    const words = (v: string) => strip(v.toLowerCase()).split(/[^a-z0-9ñ]+/).filter(w => w.length > 2 && !['del', 'con', 'sin', 'para'].includes(w)).map(w => w.replace(/(es|s)$/, ''));
+    const ingWords = words(ing.name);
+    const exact = pantry.filter(p => [...nameKeys(p.name)].some(k => keys.has(k)));
+    // "Leche entera 1 LT" en despensa también es "leche" en la receta: todas las palabras del ingrediente aparecen en el producto.
+    const loose = pantry.filter(p => !exact.includes(p) && ingWords.length > 0 && ingWords.every(w => words(p.name).includes(w)));
+    const candidates = [...exact, ...loose];
+    const base: DeductionLine = { name: ing.name, needed: ing.quantity, unit: ing.unit, itemId: null, itemName: null, take: 0, takeUnit: ing.unit, status: 'missing' };
+    if (!candidates.length) { lines.push(base); continue; }
+    let target = candidates[0], need: number | null = null;
+    for (const c of candidates) { const v = convertQuantity(ing.quantity, ing.unit, c.unit); if (v != null) { target = c; need = v; break; } }
+    if (need == null) { lines.push({ ...base, itemId: target.id, itemName: target.name, takeUnit: target.unit, status: 'unit' }); continue; }
+    const available = left.get(target.id) ?? 0;
+    const take = Math.round(Math.min(need, available) * 1000) / 1000;
+    left.set(target.id, available - take);
+    lines.push({ ...base, itemId: target.id, itemName: target.name, take, takeUnit: target.unit, status: take + 0.0005 < need ? 'short' : 'ok' });
+  }
+  return { lines, withoutRecipe };
+}
+
+/** Productos de consumo libre (se acaban cuando a alguien se le antoja): se ajustan con un conteo rápido, no por receta. */
+export const isStapleName = (name: string) =>
+  /\b(leche|huevo|yogurt|yogur|pan|tortilla|fruta|manzana|platano|plátano|jamon|jamón|queso|mantequilla|cereal|galleta|jugo)/i.test(strip(String(name).toLowerCase()));
