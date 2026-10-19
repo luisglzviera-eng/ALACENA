@@ -1,3 +1,10 @@
+# v8.10.0 — Tickets y reportes de gasto
+- Lector de tickets HEB/Calii/Calimax (foto o captura): productos, cantidades, precios, fecha y tienda; revisión editable.
+- Avisos: total que no cuadra, ticket duplicado; guardado con errores claros y sin tickets a medias.
+- Sumar a la despensa sin duplicar; borrar tickets; foto reducida antes de enviar.
+- Reportes: por mes, tienda, categoría, productos donde más se gasta y contra presupuesto.
+- No requiere SQL.
+
 # v8.9.1 — Mi familia
 - Ajustes > Mi familia: 2 adultos, niña y bebé (editable) con notas de cada quien.
 - El menú con IA usa la familia (ya no hay selector de personas); el bebé no cuenta en cantidades.

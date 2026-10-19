@@ -528,3 +528,87 @@ export function householdSummary(list: HouseholdMember[]): string {
 
 /** Personas que comen porciones normales (los bebés no cuentan para cantidades). */
 export const householdPortions = (list: HouseholdMember[]) => Math.max(1, list.filter(m => m.kind !== 'bebé').length);
+
+/* ───────────── Tickets y gasto ───────────── */
+
+export const RECEIPT_STORES = ['HEB', 'Calii', 'Calimax', 'Otro'] as const;
+export type ReceiptItem = { name: string; category: Category; quantity: number | null; unit_price: number | null; total_price: number };
+export type ReceiptRead = { store: string | null; date: string | null; items: ReceiptItem[]; total: number; itemsSum: number };
+
+const money2 = (v: unknown) => {
+  const n = typeof v === 'number' ? v : Number(String(v ?? '').replace(/[^0-9.\-]/g, ''));
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+};
+const NOT_A_PRODUCT = /^(sub\s?total|total|iva|i\.v\.a|cambio|efectivo|tarjeta|pago|propina|descuento|ahorro|redondeo|articulos|art[ií]culos|folio|ticket)\b/i;
+
+/** Limpia lo que devuelve la IA al leer un ticket: sin renglones de total/IVA/pago, precios numéricos, fecha y tienda válidas. */
+export function normalizeReceiptResponse(data: unknown): ReceiptRead {
+  const src = (data && typeof data === 'object' ? data : {}) as Record<string, any>;
+  const items: ReceiptItem[] = [];
+  for (const raw of Array.isArray(src.items) ? src.items.slice(0, 120) : []) {
+    const name = String(raw?.name ?? '').replace(/\s+/g, ' ').trim().slice(0, 70);
+    if (!name || NOT_A_PRODUCT.test(name)) continue;
+    const qtyRaw = raw?.quantity == null || raw.quantity === '' ? null : Number(raw.quantity);
+    const quantity = qtyRaw != null && Number.isFinite(qtyRaw) && qtyRaw > 0 ? Math.round(qtyRaw * 1000) / 1000 : null;
+    let unit_price: number | null = raw?.unit_price == null || raw.unit_price === '' ? null : money2(raw.unit_price);
+    if (unit_price != null && unit_price <= 0) unit_price = null;
+    let total_price = money2(raw?.total_price);
+    if (total_price <= 0 && unit_price) total_price = money2(unit_price * (quantity ?? 1));
+    if (total_price <= 0) continue; // descuentos sueltos o renglones sin precio
+    items.push({ name, category: normalizeCategory(raw?.category, name), quantity, unit_price, total_price });
+  }
+  const storeText = String(src.store ?? '').toLowerCase();
+  const store = /heb|h-e-b/.test(storeText) ? 'HEB' : /calii/.test(storeText) ? 'Calii' : /calimax/.test(storeText) ? 'Calimax' : storeText.trim() ? 'Otro' : null;
+  const dateText = String(src.date ?? '').trim();
+  const dm = dateText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = dm && +dm[2] >= 1 && +dm[2] <= 12 && +dm[3] >= 1 && +dm[3] <= 31 ? dateText : null;
+  const itemsSum = money2(items.reduce((s, i) => s + i.total_price, 0));
+  const total = money2(src.total) > 0 ? money2(src.total) : itemsSum;
+  return { store, date, items, total, itemsSum };
+}
+
+/** ¿Ya guardaste este ticket? Misma tienda, misma fecha y mismo total. */
+export function findDuplicateReceipt<T extends { store: string; purchase_date: string; total: number }>(
+  purchases: T[], candidate: { store: string; date: string; total: number },
+): T | null {
+  return purchases.find(p => p.store === candidate.store && p.purchase_date === candidate.date && Math.abs(Number(p.total) - candidate.total) < 0.01) ?? null;
+}
+
+export type MonthReport = {
+  month: string; total: number; count: number; average: number;
+  byStore: Array<{ name: string; value: number }>;
+  byCategory: Array<{ name: string; value: number }>;
+  topItems: Array<{ name: string; value: number; times: number }>;
+};
+
+export function monthKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Resumen de gasto de un mes ("2026-10"): por tienda, por categoría y los productos donde más se va. */
+export function monthReport(
+  purchases: Array<{ store: string; purchase_date: string; total: number; purchase_items?: Array<{ name: string; category: string; total_price: number }> }>,
+  month: string,
+): MonthReport {
+  const list = purchases.filter(p => String(p.purchase_date).startsWith(month));
+  const sum = (m: Map<string, number>, k: string, v: number) => m.set(k, (m.get(k) || 0) + v);
+  const stores = new Map<string, number>(), cats = new Map<string, number>();
+  const prods: Array<{ keys: Set<string>; name: string; value: number; times: number }> = [];
+  for (const p of list) {
+    sum(stores, p.store || 'Otro', Number(p.total));
+    for (const it of p.purchase_items || []) {
+      sum(cats, it.category || 'Otros', Number(it.total_price));
+      const keys = nameKeys(it.name);
+      let cur = prods.find(x => [...keys].some(k => x.keys.has(k)));
+      if (!cur) { cur = { keys: new Set(keys), name: it.name, value: 0, times: 0 }; prods.push(cur); } else keys.forEach(k => cur!.keys.add(k));
+      cur.value += Number(it.total_price); cur.times += 1;
+    }
+  }
+  const rank = (m: Map<string, number>) => [...m].map(([name, value]) => ({ name, value: Math.round(value * 100) / 100 })).sort((a, b) => b.value - a.value);
+  const total = Math.round(list.reduce((s, p) => s + Number(p.total), 0) * 100) / 100;
+  return {
+    month, total, count: list.length, average: list.length ? Math.round((total / list.length) * 100) / 100 : 0,
+    byStore: rank(stores), byCategory: rank(cats),
+    topItems: prods.map(p => ({ name: p.name, times: p.times, value: Math.round(p.value * 100) / 100 })).sort((a, b) => b.value - a.value).slice(0, 5),
+  };
+}
