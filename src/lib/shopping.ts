@@ -377,3 +377,12 @@ export function normalizeRecipesResponse(data: unknown): { answer: string; recip
 }
 
 export const stepsToNotes = (steps: string[]) => steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+
+export function friendlyPhotoError(error: unknown): string {
+  const e = (error && typeof error === 'object' ? error : {}) as { message?: string; statusCode?: string };
+  const message = String(e.message ?? (typeof error === 'string' ? error : '') ?? '');
+  if (/bucket not found|not found/i.test(message)) return 'Falta ejecutar el SQL de fotos en Supabase (archivo supabase/update_v8_6_fotos.sql).';
+  if (/row-level security|permission|unauthorized|not allowed/i.test(message)) return 'Supabase rechazó subir la foto por permisos. Cierra sesión, vuelve a entrar y reintenta.';
+  if (/payload too large|exceeded the maximum/i.test(message)) return 'La foto pesa demasiado para guardarse.';
+  return friendlyDbError(error).replace('No se pudo guardar en Compras', 'No se pudo guardar la foto');
+}

@@ -19,3 +19,9 @@ Archivos que debes ver en la raíz:
 - public
 - netlify
 - supabase
+
+
+PASO EXTRA PARA LAS FOTOS (solo la primera vez, v8.6):
+1. Abre supabase.com > tu proyecto > SQL Editor > New query.
+2. Abre el archivo supabase/update_v8_6_fotos.sql, copia TODO su contenido, pégalo y pulsa Run.
+3. Debe decir "Success". Listo.

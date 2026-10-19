@@ -1,3 +1,13 @@
+# ALACENA 8.6.0 — Fotos de recetas con IA
+
+- Al guardar una receta generada con IA se crea automáticamente su foto (quesadillas = foto de quesadillas, sándwich = foto de sándwich). Mientras carga o si falla, se queda la ilustración.
+- En cada receta guardada hay botón "Generar foto" / "Nueva foto" (sirve para recetas hechas a mano o anteriores).
+- La foto se reduce y se guarda en Supabase Storage (bucket recipe-photos); queda ligada a la receta.
+- Errores claros: falta el SQL, organización de OpenAI sin verificar, llave inválida, tiempo agotado.
+- Nueva función Netlify: generate-recipe-photo (modelo OPENAI_MODEL_IMAGE, por defecto gpt-image-1-mini con respaldo gpt-image-1).
+- IMPORTANTE: ejecutar una vez supabase/update_v8_6_fotos.sql en Supabase → SQL Editor.
+- Costo: unos centavos de dólar por foto en tu cuenta de OpenAI.
+
 # ALACENA 8.5.0 — Sprint 2: Recetas con IA
 
 - Recetario → "Crear con IA": pide recetas con texto libre o con un toque (Para niños, Snacks, Económicas, Con mi despensa, Cena familiar).

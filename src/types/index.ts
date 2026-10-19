@@ -1,7 +1,7 @@
 export const CATEGORIES=['Frutas y verduras','Carnes y pescado','Lácteos y huevos','Despensa','Limpieza y hogar','Otros'] as const;
 export type Category=typeof CATEGORIES[number];
 export type GroceryItem={id:string;text:string;category:Category;checked:boolean;source:string;quantity?:number|null;unit?:string|null;created_at:string};
-export type Recipe={id:string;name:string;ingredients:string[];notes:string;tags:string[];prep_minutes?:number|null;servings?:number|null;favorite?:boolean;nutrition?:Nutrition|null;created_at:string};
+export type Recipe={id:string;name:string;ingredients:string[];notes:string;tags:string[];prep_minutes?:number|null;servings?:number|null;favorite?:boolean;nutrition?:Nutrition|null;image_url?:string|null;created_at:string};
 export type Nutrition={calories?:number;protein_g?:number;carbs_g?:number;fat_g?:number;fiber_g?:number};
 export type MenuDays=Record<string,{lunch:string;dinner:string}>;
 export type MenuWeek={id:string;label:string;week_start:string;days:MenuDays;archived:boolean;created_at:string};

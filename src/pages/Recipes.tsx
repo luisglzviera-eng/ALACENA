@@ -1,8 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Check, ChevronDown, ChevronUp, Clock3, Info, Plus, Search, ShoppingCart, Sparkles, Users } from 'lucide-react';
+import { AlertCircle, Camera, Check, ChevronDown, ChevronUp, Clock3, Info, Plus, Search, ShoppingCart, Sparkles, Users } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Empty, Page } from '../components/UI';
+import { b64ToJpegBlob } from '../lib/image';
 import IngredientPicker from '../components/IngredientPicker';
 import { moneyApprox, parseIngredient, stepsToNotes, type GeneratedRecipe } from '../lib/shopping';
 
@@ -25,7 +26,9 @@ function Steps({ text }: { text: string }) {
 
 export default function Recipes() {
   const navigate = useNavigate();
-  const { recipes, groceries, pantry, preferences, saveRecipe, deleteRecipe, addGroceryBatch } = useApp();
+  const { recipes, groceries, pantry, preferences, saveRecipe, deleteRecipe, addGroceryBatch, setRecipePhoto } = useApp();
+  const [photoBusy, setPhotoBusy] = useState<Record<string, boolean>>({});
+  const [photoError, setPhotoError] = useState<Record<string, string>>({});
   const [open, setOpen] = useState<string>();
   const [picker, setPicker] = useState<string>();
   const [query, setQuery] = useState('');
@@ -86,9 +89,39 @@ export default function Recipes() {
     }
   }
 
+
+  async function makePhoto(target: { id: string; name: string; ingredients: string[] }) {
+    if (photoBusy[target.id]) return;
+    setPhotoBusy(prev => ({ ...prev, [target.id]: true }));
+    setPhotoError(prev => { const { [target.id]: _gone, ...rest } = prev; return rest; });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 40000);
+    try {
+      const response = await fetch('/.netlify/functions/generate-recipe-photo', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({ name: target.name, ingredients: target.ingredients.slice(0, 6) }),
+      });
+      let data: any = null;
+      try { data = await response.json(); } catch { /* no JSON: límite de tiempo de Netlify */ }
+      if (!response.ok || !data?.image) throw new Error(data?.error || 'La foto tardó demasiado en generarse. Intenta de nuevo.');
+      const blob = await b64ToJpegBlob(data.image, data.mime || 'image/jpeg');
+      const { error } = await setRecipePhoto(target.id, blob);
+      if (error) throw new Error(error);
+    } catch (error) {
+      const aborted = error instanceof DOMException && error.name === 'AbortError';
+      const offline = error instanceof TypeError;
+      setPhotoError(prev => ({ ...prev, [target.id]: aborted ? 'La foto tardó demasiado. Intenta de nuevo.' : offline ? 'No hay conexión para generar la foto.' : error instanceof Error ? error.message : 'No se pudo generar la foto.' }));
+    } finally {
+      clearTimeout(timer);
+      setPhotoBusy(prev => ({ ...prev, [target.id]: false }));
+    }
+  }
+
   async function saveGenerated(recipe: GeneratedRecipe) {
     setSavingName(recipe.name);
-    const { error } = await saveRecipe({
+    const { error, recipe: created } = await saveRecipe({
       name: recipe.name,
       ingredients: recipe.ingredients,
       notes: stepsToNotes(recipe.steps),
@@ -100,7 +133,8 @@ export default function Recipes() {
     if (error) setNotice({ tone: 'error', text: error });
     else {
       setSaved(prev => ({ ...prev, [recipe.name]: true }));
-      setNotice({ tone: 'ok', text: `Guardaste “${recipe.name}” en tu recetario.` });
+      setNotice({ tone: 'ok', text: `Guardaste “${recipe.name}” en tu recetario. Generando su foto…` });
+      if (created) void makePhoto({ id: created.id, name: created.name, ingredients: created.ingredients });
     }
   }
 
@@ -185,7 +219,10 @@ export default function Recipes() {
         <div className="recipe-grid">
           {filtered.map((recipe, index) => (
             <article className="recipe-card" key={recipe.id}>
-              <img src={recipeImages[index % recipeImages.length]} alt={recipe.name} />
+              <div className="recipe-photo">
+                <img src={recipe.image_url || recipeImages[index % recipeImages.length]} alt={recipe.name} loading="lazy" onError={event => { event.currentTarget.src = recipeImages[index % recipeImages.length]; }} />
+                {photoBusy[recipe.id] && <span className="photo-badge" role="status"><Camera size={14} /> Generando foto…</span>}
+              </div>
               <div className="recipe-card-body">
                 <button className="recipe-title" onClick={() => setOpen(open === recipe.id ? undefined : recipe.id)}>
                   <span><strong>{recipe.name}</strong><small><Clock3 size={14} /> {recipe.prep_minutes || 30} min · <Users size={14} /> {recipe.servings || 2}</small></span>
@@ -197,8 +234,10 @@ export default function Recipes() {
                     <h4>Preparación</h4><Steps text={recipe.notes} />
                     <div className="actions">
                       <button className="primary small" onClick={() => setPicker(picker === recipe.id ? undefined : recipe.id)}><ShoppingCart size={16} />Agregar a Compras</button>
+                      <button className="secondary small" disabled={photoBusy[recipe.id]} onClick={() => void makePhoto(recipe)}><Camera size={16} />{photoBusy[recipe.id] ? 'Generando…' : recipe.image_url ? 'Nueva foto' : 'Generar foto'}</button>
                       <button className="ghost danger small" onClick={() => void remove(recipe.id, recipe.name)}>Eliminar</button>
                     </div>
+                    {photoError[recipe.id] && <div className="sl-error" role="alert"><AlertCircle size={18} /><div><strong>No se pudo generar la foto</strong><p>{photoError[recipe.id]}</p></div></div>}
                     {picker === recipe.id && <IngredientPicker ingredients={recipe.ingredients.filter(i => parseIngredient(i))} groceries={groceries} pantry={pantry} onAdd={addGroceryBatch} onViewList={() => navigate('/lista')} />}
                   </div>
                 )}
