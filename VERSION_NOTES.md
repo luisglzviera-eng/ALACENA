@@ -1,3 +1,6 @@
+# v8.12.2 — Compras en español
+- En la lista, el origen del producto se ve en español (despensa, menú, IA, receta…) en vez de pantry/menu/ai.
+
 # v8.12.1 — Logo nuevo
 - Logo "casa con repisas" en el encabezado, la pantalla de entrada y el ícono de la app (incluye ícono para iPhone).
 - Si en el celular sigue el ícono viejo: quita la app de la pantalla de inicio y vuelve a agregarla.
