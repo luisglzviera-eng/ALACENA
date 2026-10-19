@@ -535,7 +535,7 @@ export const RECEIPT_STORES = ['HEB', 'Costco', "Sam's", 'Calii', 'Otro'] as con
 /** Categorías que NO son comida: no van a la despensa. */
 export const NON_FOOD_CATEGORIES: string[] = ['Limpieza y hogar', 'Otros'];
 export const isFoodCategory = (category: string) => !NON_FOOD_CATEGORIES.includes(category);
-export type ReceiptItem = { name: string; category: Category; quantity: number | null; unit_price: number | null; total_price: number; is_food: boolean };
+export type ReceiptItem = { name: string; category: Category; quantity: number | null; unit_price: number | null; total_price: number; is_food: boolean; unit: string };
 export type ReceiptRead = { store: string | null; date: string | null; items: ReceiptItem[]; total: number; itemsSum: number };
 
 const money2 = (v: unknown) => {
@@ -563,7 +563,9 @@ export function normalizeReceiptResponse(data: unknown): ReceiptRead {
     // La IA manda is_food; si se contradice con la categoría, manda is_food (y la categoría se ajusta a una válida).
     if (said === false && isFoodCategory(category)) category = 'Otros';
     if (said === true && !isFoodCategory(category)) category = 'Despensa';
-    items.push({ name, category, quantity, unit_price, total_price, is_food: isFoodCategory(category) });
+    const unitSaid = String(raw?.unit ?? '').trim();
+    const unit = unitSaid ? normalizeUnit(unitSaid) : quantity != null && !Number.isInteger(quantity) ? 'kg' : 'pza';
+    items.push({ name, category, quantity, unit, unit_price, total_price, is_food: isFoodCategory(category) });
   }
   const storeText = String(src.store ?? '').toLowerCase();
   const store = /heb|h-e-b/.test(storeText) ? 'HEB' : /costco/.test(storeText) ? 'Costco' : /\bsam.?s\b/.test(storeText) ? "Sam's" : /calii/.test(storeText) ? 'Calii' : storeText.trim() ? 'Otro' : null;

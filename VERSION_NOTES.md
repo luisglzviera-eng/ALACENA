@@ -1,3 +1,8 @@
+# v8.10.2 — Cantidad y unidad por producto en tickets
+- Cada renglón del ticket tiene cantidad + unidad (pza, kg, g, L…); la IA lee el peso del ticket (carnes, frutas, verduras).
+- La despensa recibe la cantidad real (ej. 0.8 kg de pechuga) y aviso si algo por peso quedó en piezas.
+- No requiere SQL.
+
 # v8.10.1 — Tickets de Costco, Sam's y Calii
 - Tiendas: HEB, Costco, Sam's, Calii, Otro (se quitó Calimax).
 - El lector separa lo que no es comida (limpieza, papel, higiene, bebé, mascotas, hogar, etc.): no se suma a la despensa y puedes cambiarlo renglón por renglón.
