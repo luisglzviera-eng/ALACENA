@@ -386,3 +386,33 @@ export function friendlyPhotoError(error: unknown): string {
   if (/payload too large|exceeded the maximum/i.test(message)) return 'La foto pesa demasiado para guardarse.';
   return friendlyDbError(error).replace('No se pudo guardar en Compras', 'No se pudo guardar la foto');
 }
+
+/* ───────────── Despensa: caducidad y reposición ───────────── */
+
+export const todayLocal = (now = new Date()) =>
+  `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+export type ExpiryInfo = { state: 'none' | 'ok' | 'soon' | 'expired'; days: number | null; label: string };
+
+/** Días que faltan para caducar (negativo = ya caducó). `soonDays` es el margen para avisar. */
+export function expiryInfo(expiresOn: string | null | undefined, today = todayLocal(), soonDays = 5): ExpiryInfo {
+  if (!expiresOn) return { state: 'none', days: null, label: '' };
+  const toUtc = (s: string) => {
+    const [y, m, d] = s.slice(0, 10).split('-').map(Number);
+    return Date.UTC(y, (m || 1) - 1, d || 1);
+  };
+  const days = Math.round((toUtc(expiresOn) - toUtc(today)) / 86400000);
+  if (!Number.isFinite(days)) return { state: 'none', days: null, label: '' };
+  if (days < 0) return { state: 'expired', days, label: days === -1 ? 'Caducó ayer' : `Caducó hace ${-days} días` };
+  if (days === 0) return { state: 'soon', days, label: 'Caduca hoy' };
+  if (days === 1) return { state: 'soon', days, label: 'Caduca mañana' };
+  if (days <= soonDays) return { state: 'soon', days, label: `Caduca en ${days} días` };
+  return { state: 'ok', days, label: `Caduca ${expiresOn.slice(0, 10)}` };
+}
+
+/** Cuánto conviene comprar para volver a tener stock: el doble del mínimo menos lo que queda. */
+export const restockQuantity = (quantity: number, lowAt: number) =>
+  Math.max(1, Math.round((Number(lowAt || 1) * 2 - Number(quantity || 0)) * 100) / 100);
+
+/** Paso razonable del botón +/− según la unidad. */
+export const stepForUnit = (unit: string) => (unit === 'g' || unit === 'ml' ? 100 : unit === 'kg' || unit === 'L' ? 0.5 : 1);

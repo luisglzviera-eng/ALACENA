@@ -1,3 +1,16 @@
+# ALACENA 8.7.0 — Sprint 3: Despensa funcional
+
+- Botones − / + en cada producto para ajustar la cantidad (paso según unidad: 1 pza, 0.5 kg/L, 100 g/ml). Se guarda al instante.
+- Editar producto: nombre, categoría (se sugiere sola), cantidad, unidad, caducidad, "avisar cuando quede X o menos" y código de barras.
+- Si agregas algo que ya tienes (mismo nombre y unidad) se SUMA la cantidad, no se duplica.
+- Resumen tocable: Productos / Por caducar / Stock bajo. Buscador. Orden: caducados, por caducar, stock bajo, resto.
+- Etiquetas claras: "Caducó hace N días", "Caduca mañana", "Stock bajo", "Agotado".
+- "Agregar faltantes a Compras": manda a Compras lo que está bajo o agotado (cantidad sugerida), sin repetir lo que ya está en la lista. También por producto, y al llegar a 0 se ofrece automáticamente.
+- "Lista inteligente" de Compras ahora interpreta cantidad/unidad de las recetas del menú y no pide lo que ya tienes en la despensa.
+- Errores reales de Supabase (guardar, borrar) en pantalla; el formulario no se pierde si falla; quitar pide confirmación.
+- Corregido: guardar un cambio parcial ya no borra la caducidad.
+- No cambia el esquema de Supabase ni variables.
+
 # ALACENA 8.6.0 — Fotos de recetas con IA
 
 - Al guardar una receta generada con IA se crea automáticamente su foto (quesadillas = foto de quesadillas, sándwich = foto de sándwich). Mientras carga o si falla, se queda la ilustración.

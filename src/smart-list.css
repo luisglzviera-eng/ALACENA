@@ -94,3 +94,25 @@
 .recipe-photo { position: relative; }
 .recipe-photo img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; }
 .photo-badge { position: absolute; left: 10px; bottom: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; background: rgba(24,35,29,.78); color: #fff; font-size: 12.5px; font-weight: 650; backdrop-filter: blur(6px); }
+
+/* Despensa */
+.sl-badge.danger { color: #9f3f31; background: rgba(177,66,48,.12); }
+.pn-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.pn-tile { display: grid; gap: 2px; justify-items: start; padding: 14px 16px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255,255,255,.8); text-align: left; transition: .18s ease; }
+.pn-tile strong { font-size: 24px; letter-spacing: -.03em; color: var(--green); }
+.pn-tile span { color: var(--muted); font-size: 13px; }
+.pn-tile.active { border-color: rgba(22,91,65,.4); background: rgba(22,91,65,.07); }
+.pn-tile.alert strong { color: #9f3f31; }
+.pn-restock { width: 100%; margin-bottom: 14px; }
+.pn-form { margin-bottom: 14px; }
+.pn-form-head { display: flex; align-items: center; justify-content: space-between; }
+.pn-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; margin-bottom: 10px; }
+.pn-row.expiring { border-color: rgba(216,157,31,.5); }
+.pn-row.expired { border-color: rgba(177,66,48,.4); background: rgba(255,246,243,.8); }
+.pn-main { display: grid; gap: 3px; min-width: 0; }
+.pn-main small { color: var(--muted); font-size: 13px; }
+.pn-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pn-controls { display: grid; gap: 8px; justify-items: end; }
+.pn-qty { min-width: 70px; text-align: center; font-size: 14px; white-space: nowrap; }
+.pn-actions { display: flex; gap: 2px; }
+@media (max-width: 620px) { .pn-row { flex-direction: column; align-items: stretch; } .pn-controls { justify-items: stretch; grid-template-columns: 1fr auto; align-items: center; } .pn-tile strong { font-size: 21px; } }
