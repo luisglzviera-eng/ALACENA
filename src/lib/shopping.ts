@@ -535,14 +535,26 @@ export const RECEIPT_STORES = ['HEB', 'Costco', "Sam's", 'Calii', 'Otro'] as con
 /** Categorías que NO son comida: no van a la despensa. */
 export const NON_FOOD_CATEGORIES: string[] = ['Limpieza y hogar', 'Otros'];
 export const isFoodCategory = (category: string) => !NON_FOOD_CATEGORIES.includes(category);
-export type ReceiptItem = { name: string; category: Category; quantity: number | null; unit_price: number | null; total_price: number; is_food: boolean; unit: string };
+export type ReceiptItem = { name: string; category: Category; quantity: number | null; unit_price: number | null; total_price: number; is_food: boolean; unit: string;
+  /** Lo que entra a la despensa (cantidad × contenido del paquete) y si hay que confirmarlo a mano. */
+  pantry_quantity: number; pantry_unit: string; needs_check: boolean;
+};
+
+/** Cantidad × contenido de un paquete → cantidad para la despensa, con unidades cómodas (1000 g → 1 kg). */
+export function pantryAmount(quantity: number, packSize: number | null, packUnit: string | null): { quantity: number; unit: string } {
+  let q = packSize && packSize > 0 ? quantity * packSize : quantity;
+  let unit = packSize && packSize > 0 ? normalizeUnit(packUnit) : 'pza';
+  if (unit === 'g' && q >= 1000) { q /= 1000; unit = 'kg'; }
+  if (unit === 'ml' && q >= 1000) { q /= 1000; unit = 'L'; }
+  return { quantity: Math.round(q * 1000) / 1000, unit };
+}
 export type ReceiptRead = { store: string | null; date: string | null; items: ReceiptItem[]; total: number; itemsSum: number };
 
 const money2 = (v: unknown) => {
   const n = typeof v === 'number' ? v : Number(String(v ?? '').replace(/[^0-9.\-]/g, ''));
   return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
 };
-const NOT_A_PRODUCT = /^(sub\s?total|total|iva|i\.v\.a|cambio|efectivo|tarjeta|pago|propina|descuento|ahorro|redondeo|articulos|art[ií]culos|folio|ticket)\b/i;
+const NOT_A_PRODUCT = /^(sub\s?total|venta|total|iva|i\.v\.a|ieps|cambio|efectivo|tarjeta|pago|propina|descuento|ahorro|redondeo|donativo|hambre cero|articulos|art[ií]culos|folio|ticket)\b/i;
 
 /** Limpia lo que devuelve la IA al leer un ticket: sin renglones de total/IVA/pago, precios numéricos, fecha y tienda válidas. */
 export function normalizeReceiptResponse(data: unknown): ReceiptRead {
@@ -565,7 +577,13 @@ export function normalizeReceiptResponse(data: unknown): ReceiptRead {
     if (said === true && !isFoodCategory(category)) category = 'Despensa';
     const unitSaid = String(raw?.unit ?? '').trim();
     const unit = unitSaid ? normalizeUnit(unitSaid) : quantity != null && !Number.isInteger(quantity) ? 'kg' : 'pza';
-    items.push({ name, category, quantity, unit, unit_price, total_price, is_food: isFoodCategory(category) });
+    const sizeRaw = Number(raw?.pack_size);
+    const packSize = Number.isFinite(sizeRaw) && sizeRaw > 0 ? sizeRaw : null;
+    const weighed = unit !== 'pza';
+    const amount = weighed ? { quantity: quantity ?? 1, unit } : pantryAmount(quantity ?? 1, packSize, raw?.pack_unit);
+    const food = isFoodCategory(category);
+    const needs_check = food && !weighed && !packSize && ['Carnes y pescado', 'Frutas y verduras'].includes(category);
+    items.push({ name, category, quantity, unit, unit_price, total_price, is_food: food, pantry_quantity: amount.quantity, pantry_unit: amount.unit, needs_check });
   }
   const storeText = String(src.store ?? '').toLowerCase();
   const store = /heb|h-e-b/.test(storeText) ? 'HEB' : /costco/.test(storeText) ? 'Costco' : /\bsam.?s\b/.test(storeText) ? "Sam's" : /calii/.test(storeText) ? 'Calii' : storeText.trim() ? 'Otro' : null;

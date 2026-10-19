@@ -1,3 +1,9 @@
+# v8.10.3 — La IA calcula lo que entra a la despensa
+- Lee el contenido del paquete de la descripción (HUEVO 30 PZ = 30 piezas, 5 × LECHE 1 LT = 5 L, 4 × 70 gr = 280 g).
+- Si el ticket no dice cuánto trae (pechuga), te lo marca para confirmar antes de guardar.
+- Fecha de HEB (MM-DD-AA) y renglones de donativo/IEPS ignorados.
+- No requiere SQL.
+
 # v8.10.2 — Cantidad y unidad por producto en tickets
 - Cada renglón del ticket tiene cantidad + unidad (pza, kg, g, L…); la IA lee el peso del ticket (carnes, frutas, verduras).
 - La despensa recibe la cantidad real (ej. 0.8 kg de pechuga) y aviso si algo por peso quedó en piezas.
