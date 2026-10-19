@@ -1,3 +1,14 @@
+# ALACENA 8.5.0 — Sprint 2: Recetas con IA
+
+- Recetario → "Crear con IA": pide recetas con texto libre o con un toque (Para niños, Snacks, Económicas, Con mi despensa, Cena familiar).
+- Cada receta respeta la dieta de ti y de tu esposa (las de Ajustes), trae tiempo, porciones, pasos cortos, ingredientes con cantidad/unidad y costo ESTIMADO (rotulado como estimación, nunca precio real).
+- "Guardar receta" guarda de verdad en Supabase y confirma; si falla muestra el error.
+- "Ingredientes a Compras": lista con selección y cantidades editables; marca "Ya está en Compras" y "Ya tienes en despensa"; no repite productos. Funciona igual desde recetas guardadas.
+- Ya no se agrega "500 g pechuga" como 1 pieza de Despensa: ahora se interpreta cantidad, unidad y categoría.
+- Eliminar receta pide confirmación y muestra errores reales.
+- Se reemplazó la tarjeta decorativa fija "Pasta cremosa de despensa" por el generador.
+- Nueva función Netlify: generate-recipes. No cambia el esquema de Supabase ni las variables.
+
 # ALACENA 8.4.1 — correcciones de uso en iPhone
 
 - Cantidad editable: campo de texto con botones − / + (ya no se atora al borrar o escribir).

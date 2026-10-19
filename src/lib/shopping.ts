@@ -255,3 +255,125 @@ export function friendlyDbError(error: unknown): string {
   }
   return `No se pudo guardar en Compras: ${message || 'error desconocido'}`;
 }
+
+/* ───────────── Recetas: ingredientes ↔ texto ───────────── */
+
+export type ParsedIngredient = { name: string; quantity: number; unit: string; category: Category };
+
+const FRACTIONS: Record<string, number> = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 0.33, '⅔': 0.67 };
+// Medidas de cocina: no son cómo se compra, así que se compra 1 pieza del producto.
+const COOKING_MEASURES = new Set(['taza', 'tazas', 'cucharada', 'cucharadas', 'cda', 'cdas', 'cucharadita', 'cucharaditas', 'cdita', 'cditas', 'pizca', 'pizcas', 'diente', 'dientes', 'rebanada', 'rebanadas', 'hoja', 'hojas', 'rama', 'ramas', 'ramita', 'ramitas', 'manojo', 'manojos', 'puno', 'cubo', 'cubos', 'filete', 'filetes', 'tira', 'tiras']);
+
+function parseLeadingNumber(token: string): number | null {
+  if (FRACTIONS[token] !== undefined) return FRACTIONS[token];
+  const mixed = token.match(/^(\d+)\s*([½¼¾⅓⅔])$/);
+  if (mixed) return Number(mixed[1]) + FRACTIONS[mixed[2]];
+  const frac = token.match(/^(\d+)\/(\d+)$/);
+  if (frac && Number(frac[2]) > 0) return Number(frac[1]) / Number(frac[2]);
+  const n = Number(token.replace(',', '.'));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** Convierte "500 g pechuga de pollo", "2 aguacates", "1/2 kg tomate" o "sal" en algo que se puede comprar. */
+export function parseIngredient(line: string): ParsedIngredient | null {
+  const raw = String(line ?? '').replace(/\s+/g, ' ').trim();
+  if (!raw) return null;
+  const cleaned = raw.replace(/,?\s*al gusto\.?$/i, '').replace(/^[-•*]\s*/, '').trim();
+  const match = cleaned.match(/^(\d+\s*[½¼¾⅓⅔]|\d+\/\d+|[½¼¾⅓⅔]|\d+(?:[.,]\d+)?)\s*(.*)$/);
+  let quantity = 1;
+  let unit = 'pza';
+  let rest = cleaned;
+  if (match) {
+    const n = parseLeadingNumber(match[1].replace(/\s+/g, ''));
+    rest = match[2].trim();
+    if (n !== null) {
+      quantity = n;
+      const [first, ...others] = rest.split(' ');
+      const key = strip(first.toLowerCase()).replace(/\./g, '');
+      if (COOKING_MEASURES.has(key)) {
+        quantity = 1;
+        rest = others.join(' ').replace(/^de\s+/i, '').trim();
+      } else if (UNIT_ALIASES[key] && UNIT_ALIASES[key] !== 'pza') {
+        unit = UNIT_ALIASES[key];
+        rest = others.join(' ').replace(/^de\s+/i, '').trim();
+      }
+    }
+  }
+  const name = rest.replace(/\s+/g, ' ').trim();
+  if (!name) return null;
+  const display = name.charAt(0).toUpperCase() + name.slice(1);
+  return { name: display.slice(0, 80), quantity: normalizeQuantity(quantity), unit, category: guessCategory(name) };
+}
+
+const trimNumber = (n: number) => String(Math.round(n * 100) / 100);
+
+/** Inverso de parseIngredient: texto que se guarda en la receta. */
+export function formatIngredient(i: { name: string; quantity: number; unit: string }): string {
+  const q = trimNumber(i.quantity);
+  return i.unit && i.unit !== 'pza' ? `${q} ${i.unit} ${i.name}` : `${q} ${i.name}`;
+}
+
+/* ───────────── Respuesta de la IA → recetas seguras ───────────── */
+
+export type GeneratedRecipe = {
+  name: string;
+  why: string;
+  servings: number;
+  prep_minutes: number;
+  /** Costo total estimado en MXN. Estimación de la IA, no precio real de tienda. */
+  estimated_cost: number | null;
+  tags: string[];
+  fits: string;
+  ingredients: string[];
+  steps: string[];
+};
+
+const clampInt = (value: unknown, min: number, max: number, fallback: number) => {
+  const n = Math.round(Number(value));
+  return Number.isFinite(n) && n >= min && n <= max ? n : fallback;
+};
+
+export function normalizeRecipesResponse(data: unknown): { answer: string; recipes: GeneratedRecipe[] } {
+  const source = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>;
+  const raw = Array.isArray(source.recipes) ? source.recipes : [];
+  const recipes: GeneratedRecipe[] = [];
+  const names = new Set<string>();
+  for (const entry of raw) {
+    const r = (entry && typeof entry === 'object' ? entry : {}) as Record<string, unknown>;
+    const name = String(r.name ?? '').replace(/\s+/g, ' ').trim().slice(0, 90);
+    if (!name || names.has(name.toLowerCase())) continue;
+    const ingredients = (Array.isArray(r.ingredients) ? r.ingredients : [])
+      .map(i => {
+        if (typeof i === 'string') {
+          const parsed = parseIngredient(i);
+          return parsed ? formatIngredient(parsed) : '';
+        }
+        const o = (i && typeof i === 'object' ? i : {}) as Record<string, unknown>;
+        const n = String(o.name ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+        return n ? formatIngredient({ name: n, quantity: normalizeQuantity(o.quantity), unit: normalizeUnit(o.unit) }) : '';
+      })
+      .filter(Boolean)
+      .slice(0, 25);
+    const steps = (Array.isArray(r.steps) ? r.steps : [])
+      .map(s => String(s ?? '').replace(/^\s*\d+[.)]\s*/, '').trim().slice(0, 300))
+      .filter(Boolean)
+      .slice(0, 10);
+    if (!ingredients.length || !steps.length) continue;
+    names.add(name.toLowerCase());
+    recipes.push({
+      name,
+      why: String(r.why ?? '').trim().slice(0, 160),
+      servings: clampInt(r.servings, 1, 20, 4),
+      prep_minutes: clampInt(r.prep_minutes, 1, 240, 30),
+      estimated_cost: toPrice(r.estimated_cost),
+      tags: (Array.isArray(r.tags) ? r.tags : []).map(t => String(t).trim().toLowerCase().slice(0, 24)).filter(Boolean).slice(0, 5),
+      fits: String(r.fits ?? '').trim().slice(0, 200),
+      ingredients,
+      steps,
+    });
+    if (recipes.length >= 5) break;
+  }
+  return { answer: typeof source.answer === 'string' ? source.answer.trim() : '', recipes };
+}
+
+export const stepsToNotes = (steps: string[]) => steps.map((s, i) => `${i + 1}. ${s}`).join('\n');

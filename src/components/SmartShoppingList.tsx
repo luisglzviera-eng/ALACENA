@@ -25,7 +25,7 @@ type Props = {
 };
 
 
-function QtyField({ value, name, disabled, onChange }: { value: number; name: string; disabled: boolean; onChange: (n: number) => void }) {
+export function QtyField({ value, name, disabled, onChange }: { value: number; name: string; disabled: boolean; onChange: (n: number) => void }) {
   const [draft, setDraft] = useState<string | null>(null);
   const shown = draft ?? String(value > 0 ? value : '');
   const bump = (delta: number) => { setDraft(null); onChange(Math.max(0.5, Math.round(((value > 0 ? value : 1) + delta) * 100) / 100)); };
