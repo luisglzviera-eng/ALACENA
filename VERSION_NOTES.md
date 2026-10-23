@@ -157,3 +157,6 @@ Cómo comprobarlo (2 minutos, ya publicado):
 - Fechas del menú automáticas: si la semana guardada ya pasó, Alacena la pone sola en la semana de hoy (o pasa la siguiente ya planeada). Un aviso lo explica y se puede cerrar. Ya no sale julio.
 - Aviso de quincena: jueves (y viernes si sigue sin planear) de la segunda semana llega una notificación "Toca planear la siguiente quincena", y aparece una tarjeta en Inicio y en Menú. Quincena que arranca el lunes 26 de octubre de 2026, cada 2 semanas.
 - Menú con IA más completo: comida y cena con proteína y acompañamiento (ej. "Arroz a la mexicana con huevo estrellado y frijoles"), desayuno con proteína y fruta.
+
+## v8.15.1
+- Mi catálogo: al tocar un producto sale un cuadro para elegir cantidad (− / + o escribirla) y unidad (pza, kg, g, L, ml, paquete, caja, bolsa, docena) antes de agregarlo a la lista.

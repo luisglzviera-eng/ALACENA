@@ -18,6 +18,9 @@ export default function Catalog({ onClose }: { onClose: () => void }) {
   const [added, setAdded] = useState(0);
   const [newName, setNewName] = useState('');
   const [newSection, setNewSection] = useState('');
+  const [pick, setPick] = useState<{ name: string; category: any; section: string } | null>(null);
+  const [qtyText, setQtyText] = useState('1');
+  const [unit, setUnit] = useState('pza');
 
   useEffect(() => {
     if (!isConfigured) return;
@@ -37,10 +40,16 @@ export default function Catalog({ onClose }: { onClose: () => void }) {
   const pending = useMemo(() => groceries.filter(g => !g.checked).map(g => ({ text: g.text, checked: false })), [groceries]);
   const stocked = useMemo(() => pantry.filter(p => Number(p.quantity) > 0).map(p => p.name), [pantry]);
 
-  async function addItem(name: string, category: any) {
-    const res = await addGroceryBatch([{ name, category, quantity: 1, unit: 'pza', source: 'catalog' }]);
+  function choose(name: string, category: any, section: string) { setPick({ name, category, section }); setQtyText('1'); setUnit('pza'); setNote(null); }
+
+  async function confirmAdd() {
+    if (!pick) return;
+    const qty = Number(qtyText.replace(',', '.'));
+    const quantity = Number.isFinite(qty) && qty > 0 ? qty : 1;
+    const res = await addGroceryBatch([{ name: pick.name, category: pick.category, quantity, unit, source: 'catalog' }]);
     if (res.error) return setNote({ tone: 'error', text: res.error });
-    if (res.added) { setAdded(n => n + 1); setNote({ tone: 'ok', text: `Se agregó ${name}.` }); }
+    if (res.added) { setAdded(n => n + 1); setNote({ tone: 'ok', text: `Se agregó ${pick.name} (${quantity} ${unit}).` }); }
+    setPick(null);
   }
 
   async function saveRow(row: CatalogRow) {
@@ -99,13 +108,25 @@ export default function Catalog({ onClose }: { onClose: () => void }) {
                   const have = haveInPantry(name, stocked);
                   return (
                     <span className="cat-chip-wrap" key={name}>
-                      <button type="button" className={`cat-chip${onList ? ' on' : ''}${have ? ' have' : ''}`} disabled={onList || editing} aria-label={onList ? `${name}, ya en la lista` : `Agregar ${name}`} onClick={() => void addItem(name, sec.category)}>
+                      <button type="button" className={`cat-chip${onList ? ' on' : ''}${have ? ' have' : ''}`} disabled={onList || editing} aria-label={onList ? `${name}, ya en la lista` : `Agregar ${name}`} onClick={() => choose(name, sec.category, sec.name)}>
                         {onList && <Check size={13} />}{name}{have && !onList && <em>tienes</em>}
                       </button>
                       {editing && <button type="button" className="cat-x" aria-label={`Quitar ${name} del catálogo`} onClick={() => void removeItem(sec.name, name)}><X size={13} /></button>}
                     </span>
                   );
                 })}
+                {pick && pick.section === sec.name && !editing && (
+                  <div className="cat-qty" role="group" aria-label={`Cantidad de ${pick.name}`}>
+                    <strong>{pick.name}</strong>
+                    <div className="cat-qty-row">
+                      <button type="button" className="icon-btn" aria-label="Menos" onClick={() => setQtyText(String(Math.max(0.5, (Number(qtyText.replace(',', '.')) || 1) - 1)))}>−</button>
+                      <input type="text" inputMode="decimal" aria-label="Cantidad a agregar" value={qtyText} onChange={e => { const v = e.target.value.replace(',', '.'); if (/^\d*\.?\d*$/.test(v)) setQtyText(v); }} />
+                      <button type="button" className="icon-btn" aria-label="Más" onClick={() => setQtyText(String((Number(qtyText.replace(',', '.')) || 0) + 1))}>+</button>
+                      <select value={unit} onChange={e => setUnit(e.target.value)} aria-label="Unidad">{['pza', 'kg', 'g', 'L', 'ml', 'paquete', 'caja', 'bolsa', 'docena'].map(u => <option key={u}>{u}</option>)}</select>
+                    </div>
+                    <div className="cat-qty-row"><button type="button" className="primary small" onClick={() => void confirmAdd()}>Agregar a la lista</button><button type="button" className="ghost small" onClick={() => setPick(null)}>Cancelar</button></div>
+                  </div>
+                )}
                 {editing && <form className="cat-add" onSubmit={e => { e.preventDefault(); void addCustom(sec.name); }}><input value={adding[sec.name] || ''} onChange={e => setAdding(a => ({ ...a, [sec.name]: e.target.value }))} placeholder="Nuevo producto" aria-label={`Nuevo producto en ${sec.name}`} /><button className="primary small" aria-label={`Agregar al catálogo en ${sec.name}`}><Plus size={15} /></button></form>}
               </div>
             )}

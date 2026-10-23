@@ -239,3 +239,11 @@
 .cat-sum li { margin: 3px 0; }
 .cat-compare summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 .cat-mini { display: block; margin-top: 8px; font-size: 13px; color: var(--muted); }
+
+/* Cantidad al elegir un producto del catálogo */
+.cat-qty { flex-basis: 100%; display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 18px; background: #fff; border: 1.5px solid #C99A2E; box-shadow: 0 6px 18px rgba(34,57,44,.10); }
+.cat-qty strong { color: #22392C; font-size: 16px; }
+.cat-qty-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cat-qty-row input { width: 76px; text-align: center; font-size: 17px; }
+.cat-qty-row select { min-width: 92px; }
+.cat-qty-row .icon-btn { font-size: 20px; line-height: 1; }
