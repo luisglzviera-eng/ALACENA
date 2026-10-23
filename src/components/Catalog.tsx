@@ -16,6 +16,8 @@ export default function Catalog({ onClose }: { onClose: () => void }) {
   const [adding, setAdding] = useState<Record<string, string>>({});
   const [note, setNote] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
   const [added, setAdded] = useState(0);
+  const [newName, setNewName] = useState('');
+  const [newSection, setNewSection] = useState('');
 
   useEffect(() => {
     if (!isConfigured) return;
@@ -71,8 +73,18 @@ export default function Catalog({ onClose }: { onClose: () => void }) {
   return (
     <section className="card cat-box" aria-label="Catálogo del súper">
       <div className="cat-head"><div><strong>Mi catálogo del súper</strong><small>Toca un producto para agregarlo a la lista{added ? ` · ${added} agregados` : ''}</small></div>
-        <div className="cat-actions"><button type="button" className={`ghost small ${editing ? 'on' : ''}`} onClick={() => setEditing(e => !e)}><Pencil size={15} />{editing ? 'Listo' : 'Editar'}</button><button type="button" className="icon-btn" aria-label="Cerrar catálogo" onClick={onClose}><X size={18} /></button></div></div>
+        <div className="cat-actions"><button type="button" className={`ghost small ${editing ? 'on' : ''}`} onClick={() => setEditing(e => !e)}><Pencil size={15} />{editing ? 'Listo' : 'Agregar / quitar'}</button><button type="button" className="icon-btn" aria-label="Cerrar catálogo" onClick={onClose}><X size={18} /></button></div></div>
       <div className="search-bar"><Search size={18} /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Buscar en el catálogo…" aria-label="Buscar en el catálogo" /></div>
+      {editing && (
+        <div className="cat-edit">
+          <p className="muted">Agrega un producto nuevo o abre una sección y toca la ✕ de los que quieras quitar.</p>
+          <form className="cat-newform" onSubmit={e => { e.preventDefault(); const sec = newSection || catalog[0]?.name || ''; if (!newName.trim() || !sec) return; void saveRow({ section: sec, name: newName.trim() }).then(ok => { if (ok) { setNewName(''); setOpen(sec); setNote({ tone: 'ok', text: `Se agregó ${newName.trim()} al catálogo.` }); } }); }}>
+            <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Producto nuevo" aria-label="Nombre del nuevo producto" />
+            <select value={newSection || catalog[0]?.name || ''} onChange={e => setNewSection(e.target.value)} aria-label="Sección del nuevo producto">{catalog.map(s => <option key={s.name}>{s.name}</option>)}</select>
+            <button className="primary small">Agregar al catálogo</button>
+          </form>
+        </div>
+      )}
       {note && <div className={`ai-notice ${note.tone === 'error' ? 'error' : ''}`} role="status">{note.text}</div>}
       {shown.length === 0 && <p className="muted">No hay productos con ese nombre.</p>}
       {shown.map(sec => {

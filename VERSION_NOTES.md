@@ -1,3 +1,6 @@
+# v8.13.1 — Agregar / quitar en el catálogo
+- Botón "Agregar / quitar" en Mi catálogo: formulario para agregar un producto nuevo a la sección que elijas y ✕ para quitar productos.
+
 # v8.13.0 — Menús quincenales + catálogo del súper
 - Menú: pestañas "Esta semana" / "Siguiente semana" (quincena). La IA arma la siguiente sin repetir platillos. "Lista de la quincena" junta las dos semanas.
 - La fecha del menú ahora muestra el rango (del 19 al 25 de octubre). Si el menú es de una semana vieja avisa y ofrece pasar la siguiente o empezar una nueva (la nueva empieza el lunes de esa semana).

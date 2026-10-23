@@ -230,3 +230,5 @@
 .cat-x { border: 0; background: #f3d9d3; color: #a8452f; border-radius: 999px; width: 22px; height: 22px; display: grid; place-items: center; }
 .cat-add { display: flex; gap: 6px; width: 100%; }
 .cat-add input { flex: 1; min-width: 0; }
+.cat-edit { display: grid; gap: 8px; background: #fbf3dc; border-radius: 14px; padding: 10px 12px; }
+.cat-newform { display: grid; grid-template-columns: 1fr; gap: 8px; }
