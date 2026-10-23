@@ -58,7 +58,13 @@ export const handler: Handler = async event => {
         `presupuesto máximo en MXN: ${household.budget ?? 'no indicado'}`,
         `tienda: ${household.store ?? 'cualquier supermercado de México'}`,
       ].join('; ');
-      prompt += ` La persona pide: ${customPrompt || 'Crea una lista semanal del súper'}. Datos del hogar: ${context}. Genera una lista de compras realista y completa para ese hogar y ese periodo, agrupable por pasillos. Reglas: (1) entre 12 y 30 productos con nombres genéricos y cortos, sin marcas (ej. "Pechuga de pollo"); (2) cantidad y unidad adecuadas para las personas y los días, usando solo estas unidades: pza, kg, g, L, ml, paquete, lata, bolsa, caja, docena; (3) estimated_price es el costo estimado TOTAL de esa línea en pesos mexicanos (número), aproximado, NO un precio real de la tienda; (4) la suma de estimated_price no debe pasar del presupuesto; si no alcanza, prioriza lo esencial y dilo en answer; (5) excluye lo que ya hay en cantidad suficiente en la despensa; (6) why máximo 8 palabras. Devuelve exactamente este JSON: {"answer":"1 o 2 frases que resuman la lista y aclaren que los precios son estimaciones","items":[{"name":"producto","category":"Frutas y verduras|Carnes y pescado|Lácteos y huevos|Despensa|Limpieza y hogar|Otros","quantity":1,"unit":"pza","estimated_price":0,"why":"motivo breve"}]}.`;
+      const longTrip = (household.days ?? 7) >= 10;
+      const range = longTrip ? '28 y 45' : '12 y 30';
+      const catalog = (Array.isArray(body.catalog) ? body.catalog : []).slice(0, 260).map((x: unknown) => String(x).slice(0, 40)).filter(Boolean);
+      const catalogRule = catalog.length
+        ? ` (7) Esta es la lista maestra de productos que la familia suele comprar: ${catalog.join(', ')}. Cuando un producto de tu lista exista ahí, usa EXACTAMENTE ese nombre; prioriza estos productos y agrega fuera de la lista solo lo que el pedido realmente necesite.`
+        : '';
+      prompt += ` La persona pide: ${customPrompt || 'Crea una lista semanal del súper'}. Datos del hogar: ${context}. Genera una lista de compras realista y completa para ese hogar y ese periodo, agrupable por pasillos. Reglas: (1) entre ${range} productos con nombres genéricos y cortos, sin marcas (ej. "Pechuga de pollo"); (2) cantidad y unidad adecuadas para las personas y los días, usando solo estas unidades: pza, kg, g, L, ml, paquete, lata, bolsa, caja, docena; (3) estimated_price es el costo estimado TOTAL de esa línea en pesos mexicanos (número), aproximado, NO un precio real de la tienda; (4) la suma de estimated_price no debe pasar del presupuesto; si no alcanza, prioriza lo esencial y dilo en answer; (5) excluye lo que ya hay en cantidad suficiente en la despensa; (6) why máximo 8 palabras.${catalogRule} Devuelve exactamente este JSON: {"answer":"1 o 2 frases que resuman la lista y aclaren que los precios son estimaciones","items":[{"name":"producto","category":"Frutas y verduras|Carnes y pescado|Lácteos y huevos|Despensa|Limpieza y hogar|Otros","quantity":1,"unit":"pza","estimated_price":0,"why":"motivo breve"}]}.`;
     } else if (body.mode === 'cook') {
       prompt += ` La persona pide: ${String(body.customPrompt || '¿Qué puedo cocinar hoy?')}. Sugiere 5 recetas realizables y familiares. Devuelve {"answer":"resumen breve","suggestions":[{"name":"receta","why":"explicación breve","ingredients":["ingrediente con cantidad"]}]}.`;
     } else if (body.mode === 'leftovers') {
@@ -75,7 +81,7 @@ export const handler: Handler = async event => {
     if (body.imageBase64) content.push({ type: 'image', source: { type: 'base64', media_type: body.mediaType || 'image/jpeg', data: body.imageBase64 } });
 
     const task = body.mode === 'optimize' ? 'household_optimization' : body.mode === 'fridge' ? 'fridge_analysis' : body.mode === 'leftovers' ? 'leftovers' : 'recipe_suggestions';
-    const result = await callOpenAI(content, { task, maxOutputTokens: isShopping ? 2600 : 2200, timeoutMs: 26000 });
+    const result = await callOpenAI(content, { task, maxOutputTokens: isShopping ? ((household?.days ?? 7) >= 10 ? 3800 : 2600) : 2200, timeoutMs: 26000 });
 
     if (isShopping) {
       const plan = normalizeShoppingResponse(result);

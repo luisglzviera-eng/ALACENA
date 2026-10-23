@@ -1,3 +1,7 @@
+# v8.14.0 — Lista de súper vs. catálogo
+- Alacena IA: al pedir una lista (ej. "lista de HEB para 15 días") la IA recibe tu catálogo, usa sus nombres y prioriza lo habitual. Para 15 días o más arma una lista más completa (28 a 45 productos).
+- Debajo de la lista aparece "Comparado con tu catálogo": cuántos productos ya son habituales, cuáles son nuevos y qué del catálogo no entró (con botón para agregarlo). Lo que ya tienes en la despensa no cuenta como faltante.
+
 # v8.13.1 — Agregar / quitar en el catálogo
 - Botón "Agregar / quitar" en Mi catálogo: formulario para agregar un producto nuevo a la sección que elijas y ✕ para quitar productos.
 

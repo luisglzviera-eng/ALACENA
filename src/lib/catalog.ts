@@ -53,3 +53,37 @@ export function haveInPantry(name: string, pantryNames: string[]): boolean {
   if (!need.length) return false;
   return pantryNames.some(p => { const have = new Set(tokens(p)); return need.every(t => have.has(t)); });
 }
+
+const sameProduct = (a: string, b: string) => {
+  const ta = tokens(a), tb = tokens(b);
+  if (!ta.length || !tb.length) return false;
+  const sa = new Set(ta), sb = new Set(tb);
+  return ta.every(t => sb.has(t)) || tb.every(t => sa.has(t));
+};
+
+export type CatalogComparison = {
+  total: number;
+  inCatalog: string[];
+  isNew: string[];
+  missing: Array<{ section: string; category: Category; items: string[] }>;
+  missingCount: number;
+  inPantryCount: number;
+};
+
+/** Compara una lista propuesta (p. ej. por la IA) contra el catálogo: qué ya es habitual, qué es nuevo y qué del catálogo no entró. */
+export function compareWithCatalog(listNames: string[], catalog: CatalogSection[], pantryNames: string[] = []): CatalogComparison {
+  const inCatalog: string[] = [], isNew: string[] = [];
+  const all = catalog.flatMap(s => s.items);
+  for (const n of listNames) (all.some(c => sameProduct(n, c)) ? inCatalog : isNew).push(n);
+  const missing: CatalogComparison['missing'] = [];
+  let inPantryCount = 0, missingCount = 0;
+  for (const s of catalog) {
+    const items = s.items.filter(c => {
+      if (listNames.some(n => sameProduct(n, c))) return false;
+      if (haveInPantry(c, pantryNames)) { inPantryCount++; return false; }
+      return true;
+    });
+    if (items.length) { missing.push({ section: s.name, category: s.category, items }); missingCount += items.length; }
+  }
+  return { total: listNames.length, inCatalog, isNew, missing, missingCount, inPantryCount };
+}

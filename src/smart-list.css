@@ -232,3 +232,10 @@
 .cat-add input { flex: 1; min-width: 0; }
 .cat-edit { display: grid; gap: 8px; background: #fbf3dc; border-radius: 14px; padding: 10px 12px; }
 .cat-newform { display: grid; grid-template-columns: 1fr; gap: 8px; }
+
+/* Comparación con el catálogo */
+.cat-compare { display: grid; gap: 8px; margin: 12px 0; }
+.cat-sum { margin: 0; padding-left: 18px; }
+.cat-sum li { margin: 3px 0; }
+.cat-compare summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
+.cat-mini { display: block; margin-top: 8px; font-size: 13px; color: var(--muted); }

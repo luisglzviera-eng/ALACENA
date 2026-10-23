@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AlertCircle, Camera, Check, ChefHat, Mic, PackagePlus, Plus, Send, ShoppingCart, Sparkles, Utensils } from 'lucide-react';
 import { Page } from '../components/UI';
@@ -16,6 +16,8 @@ import {
   type NewGroceryRow,
   type ShoppingItem,
 } from '../lib/shopping';
+import { useCatalog } from '../lib/useCatalog';
+import CatalogCompare from '../components/CatalogCompare';
 
 type AIItem = {
   name: string;
@@ -47,6 +49,8 @@ function inferMode(prompt: string) {
 
 export default function Assistant() {
   const { pantry, recipes, preferences, weeks, leftovers, groceries, saveLeftover, deleteLeftover, generateSmartList, addGroceryBatch } = useApp();
+  const catalog = useCatalog();
+  const catalogNames = useMemo(() => catalog.flatMap(c => c.items), [catalog]);
   const location = useLocation();
   const navigate = useNavigate();
   const [items, setItems] = useState<AIItem[]>([]);
@@ -84,7 +88,7 @@ export default function Assistant() {
       }
       const household = mode === 'shopping' && customPrompt ? parseShoppingRequest(customPrompt) : undefined;
       const payload = mode === 'shopping'
-        ? { mode, customPrompt, household, pantry, preferences }
+        ? { mode, customPrompt, household, pantry, preferences, catalog: catalogNames }
         : { mode, customPrompt, pantry, recipes, preferences, leftovers, recentMeals: weeks.slice(0, 6), imageBase64, mediaType };
       const response = await fetch('/.netlify/functions/home-assistant', {
         method: 'POST',
@@ -246,6 +250,8 @@ export default function Assistant() {
           {notice.tone === 'ok' && <button className="ghost small" onClick={() => navigate('/lista')}>Ver Compras</button>}
         </div>
       )}
+
+      {plan && <CatalogCompare names={plan.items.map(i => i.name)} catalog={catalog} pantryNames={pantry.filter(p => Number(p.quantity) > 0).map(p => p.name)} onAdd={addGroceryBatch} />}
 
       {plan && (
         <SmartShoppingList
