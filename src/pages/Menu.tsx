@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import { Page } from '../components/UI';
 import SmartShoppingList from '../components/SmartShoppingList';
 import {
-  MENU_DAYS, MENU_SLOTS, householdPortions, householdSummary, normalizeHousehold, SLOT_LABEL, expiryInfo, findDuplicate, findRecipeForMeal, mergeIngredients, normalizeShoppingResponse, parseIngredient, plannedMeals,
+  MENU_DAYS, MENU_SLOTS, addDaysISO, isWeekStale, nextWeekDays, weekRangeLabel, withNextWeek, householdPortions, householdSummary, normalizeHousehold, SLOT_LABEL, expiryInfo, findDuplicate, findRecipeForMeal, mergeIngredients, normalizeShoppingResponse, parseIngredient, plannedMeals,
   type MenuDaysMap, type MenuSlot, type ParsedIngredient, type ShoppingItem,
 } from '../lib/shopping';
 import type { MenuWeek, Recipe } from '../types';
@@ -71,6 +71,7 @@ export default function Menu() {
   const navigate = useNavigate();
   const { weeks, recipes, pantry, groceries, preferences, updateMeal, saveWeekDays, archiveWeek, addGroceryBatch } = useApp();
   const active = weeks.find(w => !w.archived);
+  const [view, setView] = useState<'cur' | 'next'>('cur');
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [picker, setPicker] = useState<{ day: string; slot: Slot } | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -89,21 +90,28 @@ export default function Menu() {
   const [shopCount, setShopCount] = useState(0);
 
   const archived = useMemo(() => weeks.filter(w => w.archived), [weeks]);
-  const valueOf = (day: string, slot: Slot) => drafts[`${day}|${slot}`] ?? active?.days[day]?.[slot] ?? '';
-  const planned = active ? plannedMeals(active.days) : [];
+  const curDays: MenuDaysMap = (active?.days ?? {}) as MenuDaysMap;
+  const nextDays: MenuDaysMap = nextWeekDays(active?.days);
+  const viewDays: MenuDaysMap = view === 'next' ? nextDays : curDays;
+  const curMeals = plannedMeals(curDays);
+  const nextMeals = plannedMeals(nextDays);
+  const planned = view === 'next' ? nextMeals : curMeals;
+  const otherMeals = view === 'next' ? curMeals : nextMeals;
+  const valueOf = (day: string, slot: Slot) => drafts[`${day}|${slot}`] ?? viewDays[day]?.[slot] ?? '';
+  const writeDays = (d: MenuDaysMap) => saveWeekDays((view === 'next' ? withNextWeek(curDays, d) : withNextWeek(d, nextDays)) as any);
   const stockedPantry = pantry.filter(p => Number(p.quantity) > 0).map(p => ({ text: p.name, checked: false }));
 
   const aiContext = () => ({
     recipes: recipes.slice(0, 30).map(r => ({ name: r.name })),
-    recentMeals: [...planned.map(m => m.text), ...archived.slice(0, 4).flatMap(w => plannedMeals(w.days).map(m => m.text))].slice(0, 30),
+    recentMeals: [...planned.map(m => m.text), ...otherMeals.map(m => m.text), ...archived.slice(0, 4).flatMap(w => plannedMeals(w.days).map(m => m.text))].slice(0, 30),
     preferences,
   });
 
   async function commit(day: string, slot: Slot, value: string) {
     const key = `${day}|${slot}`;
     const clean = value.trim();
-    if (clean === (active?.days[day]?.[slot] ?? '')) { setDrafts(d => { const { [key]: _x, ...rest } = d; return rest; }); return; }
-    const { error } = await updateMeal(day, slot, clean);
+    if (clean === (viewDays[day]?.[slot] ?? '')) { setDrafts(d => { const { [key]: _x, ...rest } = d; return rest; }); return; }
+    const { error } = await updateMeal(day, slot, clean, view);
     if (error) return setNotice({ tone: 'error', text: error });
     setDrafts(d => { const { [key]: _x, ...rest } = d; return rest; });
   }
@@ -127,6 +135,7 @@ export default function Menu() {
         pantry: stockedPantry.slice(0, 50).map(p => ({ name: p.text })),
         expiring: pantry.filter(p => ['soon', 'expired'].includes(expiryInfo(p.expires_on).state)).map(p => ({ name: p.name })),
         keep: planned.map(m => m.text),
+        avoid: otherMeals.map(m => m.text),
       });
       if (!res.ok) throw new Error(res.data?.error || 'El servidor tardó demasiado en responder. Intenta de nuevo.');
       setAiPlan({ days: res.data.days, answer: res.data.answer || '' });
@@ -140,43 +149,48 @@ export default function Menu() {
     const next: MenuDaysMap = {};
     let changed = 0;
     for (const day of MENU_DAYS) {
-      next[day] = { ...(active.days[day] || {}), lunch: active.days[day]?.lunch ?? '', dinner: active.days[day]?.dinner ?? '' };
+      next[day] = { ...(viewDays[day] || {}), lunch: viewDays[day]?.lunch ?? '', dinner: viewDays[day]?.dinner ?? '' };
       for (const slot of MENU_SLOTS) {
         const suggestion = aiPlan.days[day]?.[slot] ?? '';
         const current = next[day][slot] ?? '';
         if (suggestion && (mode === 'all' || !current)) { if (current !== suggestion) changed++; next[day][slot] = suggestion; }
       }
     }
-    const { error } = await saveWeekDays(next);
+    const { error } = await writeDays(next);
     if (error) return setNotice({ tone: 'error', text: error });
     setAiPlan(null); setAiOpen(false); setDrafts({});
     setNotice({ tone: 'ok', text: changed === 1 ? 'Se llenó 1 comida del menú.' : `Se llenaron ${changed} comidas del menú.` });
   }
 
   async function doArchive() {
-    if (!window.confirm('¿Archivar esta semana y empezar una nueva en blanco?')) return;
-    const { error } = await archiveWeek();
-    setDrafts({}); setShop(null);
-    setNotice(error ? { tone: 'error', text: error } : { tone: 'ok', text: 'Semana archivada. Empezaste una nueva.' });
+    const roll = stale && nextMeals.length > 0;
+    const msg = roll
+      ? 'Esa semana ya pasó. Se guarda en el historial y tu semana siguiente (ya planeada) pasa a ser la de esta semana. ¿Continuar?'
+      : 'Se guarda esta semana en el historial y empiezas una nueva en blanco (la de este lunes). Podrás reutilizar la anterior. ¿Continuar?';
+    if (!window.confirm(msg)) return;
+    const { error } = await archiveWeek(roll);
+    setDrafts({}); setShop(null); setView('cur');
+    setNotice(error ? { tone: 'error', text: error } : { tone: 'ok', text: 'Listo: semana nueva en blanco. La anterior quedó en el historial.' });
   }
 
   async function reuse(week: MenuWeek) {
-    if (planned.length > 0 && !window.confirm('Esto reemplaza el menú de esta semana. ¿Continuar?')) return;
+    if (planned.length > 0 && !window.confirm(`Esto reemplaza el menú de ${view === 'next' ? 'la semana siguiente' : 'esta semana'}. ¿Continuar?`)) return;
     const fresh: MenuDaysMap = {};
     for (const day of MENU_DAYS) { const { closed: _c, ...slots } = (week.days[day] || {}) as Record<string, string>; fresh[day] = slots; }
-    const { error } = await saveWeekDays(fresh as any);
+    const { error } = await writeDays(fresh);
     setDrafts({});
-    setNotice(error ? { tone: 'error', text: error } : { tone: 'ok', text: 'Se copió ese menú a esta semana.' });
+    setNotice(error ? { tone: 'error', text: error } : { tone: 'ok', text: view === 'next' ? 'Se copió ese menú a la semana siguiente.' : 'Se copió ese menú a esta semana.' });
   }
 
-  async function buildShoppingList() {
+  async function buildShoppingList(scope: 'week' | 'both' = 'week') {
     if (shopLoading || !active) return;
     setShopLoading(true); setShop(null); setNotice(null);
     const notes: string[] = [];
     try {
       const matchedIngredients: ParsedIngredient[] = [];
       const unmatched: string[] = [];
-      for (const meal of planned) {
+      const scopeMeals = scope === 'both' ? [...curMeals, ...nextMeals] : planned;
+      for (const meal of scopeMeals) {
         const recipe = findRecipeForMeal(recipes, meal.text);
         if (recipe) matchedIngredients.push(...recipe.ingredients.map(i => parseIngredient(i)).filter((x): x is ParsedIngredient => x !== null));
         else if (!unmatched.some(u => u.toLowerCase() === meal.text.toLowerCase())) unmatched.push(meal.text);
@@ -192,7 +206,7 @@ export default function Menu() {
           const res = await postJSON('/.netlify/functions/home-assistant', {
             mode: 'shopping',
             customPrompt: `Haz la lista de compras con SOLO los ingredientes para preparar estos platillos para ${people} personas, una vez cada uno: ${unmatched.join('; ')}`,
-            household: { people, days: 7, budget: null, store: null },
+            household: { people, days: scope === 'both' ? 14 : 7, budget: null, store: null },
             pantry: pantry.slice(0, 80).map(p => ({ name: p.name, quantity: p.quantity, unit: p.unit })),
             preferences,
           });
@@ -214,20 +228,28 @@ export default function Menu() {
   }
 
   if (!active) return null;
-  const weekLabel = (() => { const [y, m, d] = active.week_start.split('-').map(Number); return y ? new Date(y, m - 1, d).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' }) : ''; })();
+  const weekLabel = weekRangeLabel(view === 'next' ? addDaysISO(active.week_start, 7) : active.week_start);
+  const stale = isWeekStale(active.week_start);
 
   return (
-    <Page title="Menú semanal" subtitle={`${planned.length} de 14 comidas planeadas${weekLabel ? ` · semana del ${weekLabel}` : ''}`} action={<button className="secondary small" onClick={() => void doArchive()}><Archive size={17} />Archivar</button>}>
+    <Page title="Menú semanal" subtitle={`${planned.length} de 14 comidas planeadas${weekLabel ? ` · semana ${weekLabel}` : ''}`} action={<button className="secondary small" onClick={() => void doArchive()}><Archive size={17} />Nueva semana</button>}>
+      {stale && <div className="ai-notice" role="status"><AlertCircle size={18} /><span>Este menú es de la semana {weekRangeLabel(active.week_start)}. {nextMeals.length > 0 ? '¿Pasamos la semana siguiente que ya planeaste?' : '¿Empezamos la de esta semana?'}</span><button type="button" className="primary small" onClick={() => void doArchive()}>{nextMeals.length > 0 ? 'Pasar a esta semana' : 'Empezar semana nueva'}</button></div>}
+      <div className="mn-tabs" role="tablist" aria-label="Semana del menú">
+        <button type="button" role="tab" aria-selected={view === 'cur'} className={view === 'cur' ? 'on' : ''} onClick={() => { setView('cur'); setDrafts({}); setPicker(null); setAiPlan(null); }}>Esta semana<small>{weekRangeLabel(active.week_start)}</small></button>
+        <button type="button" role="tab" aria-selected={view === 'next'} className={view === 'next' ? 'on' : ''} onClick={() => { setView('next'); setDrafts({}); setPicker(null); setAiPlan(null); }}>Siguiente semana<small>{weekRangeLabel(addDaysISO(active.week_start, 7))}</small></button>
+      </div>
+      {view === 'cur' && curMeals.length > 0 && nextMeals.length === 0 && <div className="card mn-biweekly"><div><strong>¿Planeamos la quincena?</strong><small>Arma también la semana siguiente para hacer el súper de 15 días.</small></div><button type="button" className="secondary small" onClick={() => { setView('next'); setAiOpen(true); setAiPlan(null); }}>Armar semana siguiente</button></div>}
       {notice && <div className={`ai-notice ${notice.tone === 'error' ? 'error' : ''}`} role="status">{notice.tone === 'ok' ? <Check size={18} /> : <AlertCircle size={18} />}{notice.text}</div>}
 
       <div className="mn-toolbar">
-        <button type="button" className="primary small" onClick={() => setAiOpen(!aiOpen)}><Sparkles size={16} />Armar semana con IA</button>
-        <button type="button" className="secondary small" disabled={planned.length === 0 || shopLoading} onClick={() => void buildShoppingList()}><ShoppingCart size={16} />{shopLoading ? 'Calculando…' : 'Lista de compras del menú'}</button>
+        <button type="button" className="primary small" onClick={() => setAiOpen(!aiOpen)}><Sparkles size={16} />{view === 'next' ? 'Armar semana siguiente con IA' : 'Armar semana con IA'}</button>
+        <button type="button" className="secondary small" disabled={planned.length === 0 || shopLoading} onClick={() => void buildShoppingList()}><ShoppingCart size={16} />{shopLoading ? 'Calculando…' : view === 'next' ? 'Lista de la semana siguiente' : 'Lista de compras del menú'}</button>
+        {curMeals.length > 0 && nextMeals.length > 0 && <button type="button" className="secondary small" disabled={shopLoading} onClick={() => void buildShoppingList('both')}><ShoppingCart size={16} />Lista de la quincena</button>}
       </div>
 
       {aiOpen && (
         <section className="card mn-ai">
-          <h3>Armar la semana con IA</h3>
+          <h3>{view === 'next' ? 'Armar la semana siguiente con IA' : 'Armar la semana con IA'}</h3>
           <p className="muted">Respeta las dietas de Ajustes, usa tus recetas y lo que ya tienes. No cambia lo que ya escribiste hasta que tú lo apliques.</p>
           <input value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="Ej. semana económica, cenas ligeras" aria-label="Pedido para el menú" />
           <div className="mn-chips" role="group" aria-label="Qué comidas incluir">

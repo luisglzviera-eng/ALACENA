@@ -21,6 +21,7 @@ export const handler: Handler = async event => {
     const shape = '{' + slots.map(s => `"${s}":"platillo"`).join(',') + '}';
     const slotText = slots.map(s => s === 'kids' ? 'kids = lunch escolar de la niña (se lleva a la escuela: frío, fácil de empacar, sin picante)' : s === 'snack' ? 'snack = colación ligera' : `${s} = ${SLOT_LABEL[s].toLowerCase()}`).join('; ');
     const family = (Array.isArray(body.household) ? body.household : []).slice(0, 12).map((x: any) => `${String(x?.name ?? '').slice(0, 30)} (${String(x?.kind ?? '').slice(0, 10)}${x?.notes ? ': ' + String(x.notes).slice(0, 120) : ''})`).filter((x: string) => x.length > 3);
+    const avoid = (Array.isArray(body.avoid) ? body.avoid : []).slice(0, 28).map((x: unknown) => String(x).slice(0, 60)).filter(Boolean);
     const keep = (Array.isArray(body.keep) ? body.keep : []).slice(0, 14).map((x: unknown) => String(x).slice(0, 60)).filter(Boolean);
 
     const prompt = [
@@ -36,6 +37,7 @@ export const handler: Handler = async event => {
       saved.length ? `Usa recetas ya guardadas cuando encajen (nombre exacto): ${saved.join(', ')}.` : '',
       expiring.length ? `Aprovecha primero lo que va a caducar: ${expiring.join(', ')}.` : '',
       pantry.length ? `En la despensa hay: ${pantry.join(', ')}.` : '',
+      avoid.length ? `La otra semana de la quincena ya incluye estos platillos; NO los repitas y varía proteínas y guarniciones: ${avoid.join(', ')}.` : '',
       keep.length ? `Ya están decididos y NO debes cambiarlos ni repetirlos: ${keep.join(', ')}.` : '',
     ].filter(Boolean).join('\n');
 

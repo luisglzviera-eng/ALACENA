@@ -201,3 +201,32 @@
 .pp-name input:not([type=checkbox]) { min-width: 0; flex: 1; }
 .pp-cat { grid-column: 1 / -1; }
 .pp-note { grid-column: 1 / -1; color: #6b4a00; font-size: 12.5px; }
+
+/* Menú: semana actual / siguiente */
+.mn-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 12px; }
+.mn-tabs button { display: grid; gap: 2px; text-align: left; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--line); background: #fff; font-weight: 700; color: var(--ink); }
+.mn-tabs button small { font-weight: 500; color: var(--muted); font-size: 12px; }
+.mn-tabs button.on { background: #22392C; color: #fff; border-color: #22392C; }
+.mn-tabs button.on small { color: #e9e2c8; }
+.mn-biweekly { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.mn-biweekly small { display: block; color: var(--muted); }
+
+/* Catálogo del súper */
+.cat-box { display: grid; gap: 10px; margin: 12px 0; }
+.cat-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.cat-head small { display: block; color: var(--muted); }
+.cat-actions { display: flex; align-items: center; gap: 6px; }
+.cat-actions .on { background: #22392C; color: #fff; }
+.cat-sec { border-top: 1px solid var(--line); }
+.cat-sec-head { width: 100%; display: flex; align-items: center; gap: 8px; padding: 12px 2px; background: none; border: 0; font-weight: 700; color: var(--ink); text-align: left; }
+.cat-sec-head span { flex: 1; }
+.cat-sec-head small { color: var(--muted); font-weight: 500; }
+.cat-sec-head svg.up { transform: rotate(180deg); }
+.cat-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 0 12px; }
+.cat-chip-wrap { display: inline-flex; align-items: center; gap: 2px; }
+.cat-chip { display: inline-flex; align-items: center; gap: 5px; padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink); font-size: 14px; }
+.cat-chip em { font-style: normal; font-size: 11px; color: #2c6b45; background: #e4f0e7; border-radius: 999px; padding: 1px 6px; }
+.cat-chip.on { background: #22392C; color: #fff; border-color: #22392C; opacity: .85; }
+.cat-x { border: 0; background: #f3d9d3; color: #a8452f; border-radius: 999px; width: 22px; height: 22px; display: grid; place-items: center; }
+.cat-add { display: flex; gap: 6px; width: 100%; }
+.cat-add input { flex: 1; min-width: 0; }

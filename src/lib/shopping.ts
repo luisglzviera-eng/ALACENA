@@ -749,3 +749,46 @@ export function mergePhotoItems(list: PantryPhotoItem[]): PantryPhotoItem[] {
   // Un mismo producto en 2+ fotos puede ser el mismo (fotos que se traslapan): pide confirmar.
   return groups.map(g => ({ ...g.item, sure: g.n > 1 ? false : g.item.sure }));
 }
+
+/** Lunes de la semana de una fecha (hora local), en AAAA-MM-DD. */
+export function mondayOf(now = new Date()): string {
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return todayLocal(d);
+}
+
+/** "del 19 al 25 de octubre" / "del 28 de septiembre al 4 de octubre" para una semana que empieza en weekStart. */
+export function weekRangeLabel(weekStart: string): string {
+  const [y, m, d] = String(weekStart).split('-').map(Number);
+  if (!y || !m || !d) return '';
+  const a = new Date(y, m - 1, d), b = new Date(y, m - 1, d + 6);
+  const month = (x: Date) => x.toLocaleDateString('es-MX', { month: 'long' });
+  return a.getMonth() === b.getMonth() ? `del ${a.getDate()} al ${b.getDate()} de ${month(b)}` : `del ${a.getDate()} de ${month(a)} al ${b.getDate()} de ${month(b)}`;
+}
+
+/** ¿La semana guardada ya quedó atrás (empezó hace más de una semana)? */
+export function isWeekStale(weekStart: string, now = new Date()): boolean {
+  return Boolean(weekStart) && weekStart < mondayOf(now);
+}
+
+/* ───────────── Quincena: la semana siguiente vive dentro del mismo registro ───────────── */
+
+export const NEXT_WEEK_KEY = '_next';
+
+/** El menú de la semana siguiente guardado dentro de `days` (o vacío). */
+export function nextWeekDays(days: Record<string, any> | null | undefined): MenuDaysMap {
+  const n = days?.[NEXT_WEEK_KEY];
+  return n && typeof n === 'object' ? (n as MenuDaysMap) : {};
+}
+
+/** Une los días de la semana actual con los de la siguiente sin perder ninguno. */
+export function withNextWeek(days: Record<string, any>, next: MenuDaysMap | null | undefined): Record<string, any> {
+  const { [NEXT_WEEK_KEY]: _old, ...rest } = days || {};
+  return next && plannedMeals(next).length ? { ...rest, [NEXT_WEEK_KEY]: next } : rest;
+}
+
+/** Lunes de la semana siguiente a weekStart (AAAA-MM-DD). */
+export function addDaysISO(iso: string, n: number): string {
+  const [y, m, d] = String(iso).split('-').map(Number);
+  return todayLocal(new Date(y, (m || 1) - 1, (d || 1) + n));
+}

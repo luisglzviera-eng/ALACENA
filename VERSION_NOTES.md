@@ -1,3 +1,9 @@
+# v8.13.0 — Menús quincenales + catálogo del súper
+- Menú: pestañas "Esta semana" / "Siguiente semana" (quincena). La IA arma la siguiente sin repetir platillos. "Lista de la quincena" junta las dos semanas.
+- La fecha del menú ahora muestra el rango (del 19 al 25 de octubre). Si el menú es de una semana vieja avisa y ofrece pasar la siguiente o empezar una nueva (la nueva empieza el lunes de esa semana).
+- Compras: "Mi catálogo" con la lista de súper de Excel (15 secciones, ~190 productos). Tocar un producto lo agrega; marca lo que ya está en la lista o en la despensa; se puede buscar y editar.
+- SQL opcional para guardar cambios propios del catálogo: supabase/update_v8_13_catalogo.sql (sin SQL el catálogo base funciona igual).
+
 # v8.12.2 — Compras en español
 - En la lista, el origen del producto se ve en español (despensa, menú, IA, receta…) en vez de pantry/menu/ai.
 
