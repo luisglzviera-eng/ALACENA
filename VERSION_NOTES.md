@@ -148,3 +148,7 @@ Cómo comprobarlo (2 minutos, ya publicado):
 - Detección automática de solicitudes de supermercado y recetas.
 - Listas para HEB, Costco y otros comercios con categoría, cantidad y unidad.
 - Confirmación y acceso directo a Compras después de agregar resultados.
+
+## v8.14.1
+- Despensa por foto: los nombres salen como en casa ("Banana" → "Plátano", "palta" → "Aguacate", etc.). Se corrige en el prompt y con un diccionario `mexicanName` aplicado a lo que devuelve la IA.
+- Demo: la semana de ejemplo empieza el lunes actual.

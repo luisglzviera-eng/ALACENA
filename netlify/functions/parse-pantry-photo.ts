@@ -15,6 +15,7 @@ export const handler: Handler = async event => {
       'Responde SOLO con JSON válido: {"items":[{"name":"","category":"Frutas y verduras|Carnes y pescado|Lácteos y huevos|Despensa|Limpieza y hogar|Otros","quantity":1,"unit":"pza|kg|g|L|ml","estimated":false}]}',
       'Reglas: un renglón por tipo de producto. name = nombre legible con marca y presentación SOLO si se alcanza a leer (ej. "Leche Santa Clara entera 1 L", "Yogurt Danonino fresa"). quantity = cuántas piezas/envases iguales ves (cuéntalas); si algo se vende por peso y no se ve el peso, pon quantity 1 unit "pza" y estimated true.',
       'estimated = true cuando no estás seguro de la cantidad (producto tapado, a medias, en bolsa opaca, fruta o verdura a granel, o no lo cuentas bien). Si estás seguro de lo que ves, estimated false.',
+      'Usa SIEMPRE el español de México y los nombres que se usan en casa: Plátano (no banana), Aguacate (no palta), Elote (no choclo), Jitomate/Tomate, Durazno, Frijol, Crema (no nata), Yogurt, Jugo (no zumo), Carne molida, Camarones, Papel de baño, Pasta dental. Nombres cortos y simples: "Naranja", "Manzana amarilla", "Leche", "Queso Oaxaca".',
       'No inventes productos que no se ven. Si un envase no se puede identificar, omítelo. Ignora platos, utensilios y contenedores vacíos. Si hay sobras en recipientes sin etiqueta, ponlas como "Sobras (recipiente)" con estimated true.',
     ].join('\n');
     const data = await callOpenAI(

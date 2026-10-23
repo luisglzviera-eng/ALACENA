@@ -719,11 +719,35 @@ export const isStapleName = (name: string) =>
 export type PantryPhotoItem = { name: string; category: Category; quantity: number; unit: string; sure: boolean };
 
 /** Limpia lo que devuelve la IA al mirar una foto del refri/alacena. */
+/** Palabras que la IA suele usar (España/Sudamérica/inglés) → como las decimos en casa (catálogo de Excel). */
+const MX_WORDS: Array<[RegExp, string]> = [
+  [/\bban(?:ana|ano)s?\b/gi, 'Plátano'], [/\bpl[aá]tanos?\b/gi, 'Plátano'],
+  [/\b(?:palta|avocado)s?\b/gi, 'Aguacate'], [/\bfrutillas?\b/gi, 'Fresa'],
+  [/\b(?:choclo|ma[ií]z tierno|mazorca)s?\b/gi, 'Elote'], [/\b(?:zapallito|calabac[ií]n)(?:es|s)?\b/gi, 'Calabacita'],
+  [/\b(?:judías|judias|habichuelas|vainitas) verdes\b/gi, 'Ejotes'], [/\b(?:porotos|alubias|frijoles)\b/gi, 'Frijol'],
+  [/\b(?:patatas?)\b/gi, 'Papa'], [/\bjitomates?\b/gi, 'Tomate'], [/\b(?:morr[oó]n(?:es)?|pimientos?)\b/gi, 'Pimiento'],
+  [/\b(?:hongos|setas)\b/gi, 'Champiñones'], [/\bnata\b/gi, 'Crema'], [/\bzumo\b/gi, 'Jugo'],
+  [/\bcarne picada\b/gi, 'Carne molida'], [/\bgambas?\b/gi, 'Camarones'], [/\bpomelos?\b/gi, 'Toronja'],
+  [/\bmelocot[oó]n(?:es)?\b/gi, 'Durazno'], [/\balbaricoques?\b/gi, 'Chabacano'], [/\b(?:man[ií]|cacahuetes?)\b/gi, 'Cacahuate'],
+  [/\byogur\b/gi, 'Yogurt'], [/\byoghurt\b/gi, 'Yogurt'], [/\bpapel higi[eé]nico\b/gi, 'Papel de baño'],
+  [/\bpasta de dientes\b/gi, 'Pasta dental'], [/\bpan de molde\b/gi, 'Pan Bimbo'], [/\bpan rallado\b/gi, 'Pan molido'],
+  [/\bsalchichas\b/gi, 'Salchicha'], [/\blentejas\b/gi, 'Lenteja'], [/\bgarbanzos\b/gi, 'Garbanzo'],
+  [/\bpeach(?:es)?\b/gi, 'Durazno'], [/\bapples?\b/gi, 'Manzana'], [/\boranges?\b/gi, 'Naranja'], [/\bmilk\b/gi, 'Leche'],
+  [/\beggs?\b/gi, 'Huevo'], [/\bcheese\b/gi, 'Queso'], [/\bchicken\b/gi, 'Pollo'],
+];
+/** Pasa el nombre al español de casa ("Banana" → "Plátano"); lo demás (marca, presentación) se respeta. */
+export function mexicanName(name: string): string {
+  let out = name;
+  for (const [re, to] of MX_WORDS) out = out.replace(re, to);
+  out = out.replace(/\s+/g, ' ').trim();
+  return out ? out.charAt(0).toUpperCase() + out.slice(1) : out;
+}
+
 export function normalizePantryPhotoResponse(data: unknown): PantryPhotoItem[] {
   const src = (data && typeof data === 'object' ? data : {}) as Record<string, any>;
   const out: PantryPhotoItem[] = [];
   for (const raw of Array.isArray(src.items) ? src.items.slice(0, 80) : []) {
-    const name = String(raw?.name ?? '').replace(/\s+/g, ' ').trim().slice(0, 70);
+    const name = mexicanName(String(raw?.name ?? '').replace(/\s+/g, ' ').trim()).slice(0, 70);
     if (!name) continue;
     const q = Number(raw?.quantity);
     const quantity = Number.isFinite(q) && q > 0 ? Math.round(q * 1000) / 1000 : 1;
