@@ -27,7 +27,8 @@ export const handler: Handler = async event => {
     const prompt = [
       'Eres Alacena, asistente culinario de una familia en México. Responde SOLO con JSON válido, en español de México.',
       `Forma exacta: {"answer":"frase corta","days":{"Lunes":${shape},"Martes":{...},"Miércoles":{...},"Jueves":{...},"Viernes":{...},"Sábado":{...},"Domingo":{...}}}`,
-      `Arma el menú de una semana (7 días) para ${people} personas con estas comidas por día: ${slotText}. Cada platillo es solo el NOMBRE (máximo 6 palabras), sin descripción.`,
+      `Arma el menú de una semana (7 días) para ${people} personas con estas comidas por día: ${slotText}. Cada platillo es solo el NOMBRE (máximo 10 palabras), sin descripción, pero COMPLETO: el plato principal más su complemento, como se come en casa.`,
+      'Comida y cena: plato principal + proteína + acompañamiento (ej. "Arroz a la mexicana con huevo estrellado y frijoles", "Milanesa de pollo con ensalada y puré", "Caldo de res con verduras y arroz"). Si el plato no trae proteína, agrégala. Desayuno: proteína + fruta o cereal (ej. "Huevos a la mexicana con frijoles y papaya"). Snack y lunch de la niña: algo concreto con fruta o proteína ligera. Usa los nombres de casa: plátano, aguacate, elote, jitomate.',
       request ? `Pedido de la persona: ${request}` : '',
       `Dieta persona 1: ${prefs.diet_user || 'sin restricciones indicadas'}. Dieta persona 2: ${prefs.diet_partner || 'sin restricciones indicadas'}. TODOS los platillos deben respetar AMBAS dietas.`,
       family.length ? `Integrantes de la familia: ${family.join('; ')}. Respeta alergias y notas de cada quien; si hay bebé, evita miel, sal en exceso, picante y alimentos que sean riesgo de atragantamiento.` : '',
@@ -41,7 +42,7 @@ export const handler: Handler = async event => {
       keep.length ? `Ya están decididos y NO debes cambiarlos ni repetirlos: ${keep.join(', ')}.` : '',
     ].filter(Boolean).join('\n');
 
-    const data = await callOpenAI([{ type: 'text', text: prompt }], { task: 'recipe_suggestions', maxOutputTokens: 2200, timeoutMs: 26000 });
+    const data = await callOpenAI([{ type: 'text', text: prompt }], { task: 'recipe_suggestions', maxOutputTokens: 3200, timeoutMs: 26000 });
     const plan = normalizeMenuResponse(data);
     if (plan.filled < Math.min(4, slots.length * 2)) return json(502, { error: 'La IA no devolvió un menú completo. Intenta de nuevo.' });
     return json(200, plan);

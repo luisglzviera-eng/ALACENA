@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Archive, BookOpen, Check, Copy, ShoppingCart, Sparkles, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Page } from '../components/UI';
 import SmartShoppingList from '../components/SmartShoppingList';
 import {
-  MENU_DAYS, MENU_SLOTS, addDaysISO, isWeekStale, nextWeekDays, weekRangeLabel, withNextWeek, householdPortions, householdSummary, normalizeHousehold, SLOT_LABEL, expiryInfo, findDuplicate, findRecipeForMeal, mergeIngredients, normalizeShoppingResponse, parseIngredient, plannedMeals,
+  MENU_DAYS, MENU_SLOTS, planningWindow, todayLocal, addDaysISO, isWeekStale, nextWeekDays, weekRangeLabel, withNextWeek, householdPortions, householdSummary, normalizeHousehold, SLOT_LABEL, expiryInfo, findDuplicate, findRecipeForMeal, mergeIngredients, normalizeShoppingResponse, parseIngredient, plannedMeals,
   type MenuDaysMap, type MenuSlot, type ParsedIngredient, type ShoppingItem,
 } from '../lib/shopping';
 import type { MenuWeek, Recipe } from '../types';
@@ -93,6 +93,9 @@ export default function Menu() {
   const curDays: MenuDaysMap = (active?.days ?? {}) as MenuDaysMap;
   const nextDays: MenuDaysMap = nextWeekDays(active?.days);
   const viewDays: MenuDaysMap = view === 'next' ? nextDays : curDays;
+  const readNotice = (): { rolled: boolean; from: string } | null => { try { const v = sessionStorage.getItem('alacena_week_notice'); return v ? JSON.parse(v) : null; } catch { return null; } };
+  const [weekNotice, setWeekNotice] = useState(readNotice);
+  useEffect(() => { const on = () => setWeekNotice(readNotice()); window.addEventListener('alacena-week-notice', on); return () => window.removeEventListener('alacena-week-notice', on); }, []);
   const curMeals = plannedMeals(curDays);
   const nextMeals = plannedMeals(nextDays);
   const planned = view === 'next' ? nextMeals : curMeals;
@@ -163,7 +166,7 @@ export default function Menu() {
   }
 
   async function doArchive() {
-    const roll = stale && nextMeals.length > 0;
+    const roll = isWeekStale(active?.week_start || "") && nextMeals.length > 0;
     const msg = roll
       ? 'Esa semana ya pasó. Se guarda en el historial y tu semana siguiente (ya planeada) pasa a ser la de esta semana. ¿Continuar?'
       : 'Se guarda esta semana en el historial y empiezas una nueva en blanco (la de este lunes). Podrás reutilizar la anterior. ¿Continuar?';
@@ -229,11 +232,11 @@ export default function Menu() {
 
   if (!active) return null;
   const weekLabel = weekRangeLabel(view === 'next' ? addDaysISO(active.week_start, 7) : active.week_start);
-  const stale = isWeekStale(active.week_start);
 
   return (
     <Page title="Menú semanal" subtitle={`${planned.length} de 14 comidas planeadas${weekLabel ? ` · semana ${weekLabel}` : ''}`} action={<button className="secondary small" onClick={() => void doArchive()}><Archive size={17} />Nueva semana</button>}>
-      {stale && <div className="ai-notice" role="status"><AlertCircle size={18} /><span>Este menú es de la semana {weekRangeLabel(active.week_start)}. {nextMeals.length > 0 ? '¿Pasamos la semana siguiente que ya planeaste?' : '¿Empezamos la de esta semana?'}</span><button type="button" className="primary small" onClick={() => void doArchive()}>{nextMeals.length > 0 ? 'Pasar a esta semana' : 'Empezar semana nueva'}</button></div>}
+      {weekNotice && <div className="ai-notice" role="status"><AlertCircle size={18} /><span>{weekNotice.rolled ? `Ya pasó la semana ${weekRangeLabel(weekNotice.from)}: la semana siguiente que planeaste ahora es la de esta semana.` : `Este menú venía de la semana ${weekRangeLabel(weekNotice.from)}. Lo dejé en la fecha de hoy; si quieres uno nuevo, toca "Nueva semana".`}</span><button type="button" className="secondary small" onClick={() => { try { sessionStorage.removeItem('alacena_week_notice'); } catch { /* sin storage */ } setWeekNotice(null); }}>Entendido</button></div>}
+      {planningWindow(todayLocal()) && nextMeals.length < 7 && <div className="ai-notice" role="status"><AlertCircle size={18} /><span>Es la segunda semana de la quincena: toca planear la siguiente.</span><button type="button" className="primary small" onClick={() => { setView('next'); setAiOpen(true); setAiPlan(null); }}>Armar siguiente</button></div>}
       <div className="mn-tabs" role="tablist" aria-label="Semana del menú">
         <button type="button" role="tab" aria-selected={view === 'cur'} className={view === 'cur' ? 'on' : ''} onClick={() => { setView('cur'); setDrafts({}); setPicker(null); setAiPlan(null); }}>Esta semana<small>{weekRangeLabel(active.week_start)}</small></button>
         <button type="button" role="tab" aria-selected={view === 'next'} className={view === 'next' ? 'on' : ''} onClick={() => { setView('next'); setDrafts({}); setPicker(null); setAiPlan(null); }}>Siguiente semana<small>{weekRangeLabel(addDaysISO(active.week_start, 7))}</small></button>

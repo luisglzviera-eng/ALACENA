@@ -1,5 +1,6 @@
 import type { Handler } from '@netlify/functions';
 import { addDays, differenceInCalendarDays, format } from 'date-fns';
+import { nextWeekDays, plannedMeals, planningDue } from '../../src/lib/shopping';
 import { admin, assertPushEnv, canSend, isQuietHour, logPush, mexicoNow, sendToSubscription, type PushRow } from './_shared/push';
 
 const dayMap: Record<string, string> = { Monday: 'Lunes', Tuesday: 'Martes', Wednesday: 'Miércoles', Thursday: 'Jueves', Friday: 'Viernes', Saturday: 'Sábado', Sunday: 'Domingo' };
@@ -51,6 +52,12 @@ export const handler: Handler = async () => {
           const body = [meals.breakfast && `Desayuno: ${meals.breakfast}`, meals.lunch && `Comida: ${meals.lunch}`, meals.snack && `Snack: ${meals.snack}`, meals.kids && `Lunch niña: ${meals.kids}`, meals.dinner && `Cena: ${meals.dinner}`].filter(Boolean).join(' · ');
           if (await deliver(subscription, 'menu', `menu:${now.date}`, 'Menú de hoy', body, '/menu', now.date)) sent++;
         }
+      }
+
+      if (subscription.menu_alerts && now.hour === 9 && planningDue(now.date) && plannedMeals(nextWeekDays(week?.days as any)).length < 7) {
+        const thursday = now.weekday === 'Thursday';
+        const body = thursday ? 'Esta es la segunda semana de la quincena. Arma el menú de la siguiente y la lista del súper.' : 'Todavía falta planear la siguiente quincena. Con el menú listo, el súper sale en un solo viaje.';
+        if (await deliver(subscription, 'plan', `plan:${now.date}`, 'Toca planear la siguiente quincena', body, '/menu', now.date)) sent++;
       }
 
       if (subscription.missing_ingredients_alerts && now.hour === subscription.missing_ingredients_hour && (groceries || []).length) {

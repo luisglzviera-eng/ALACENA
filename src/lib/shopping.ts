@@ -795,6 +795,24 @@ export function isWeekStale(weekStart: string, now = new Date()): boolean {
   return Boolean(weekStart) && weekStart < mondayOf(now);
 }
 
+/* ───────────── Ritmo de la quincena (2 semanas) ───────────── */
+
+/** Lunes en que arranca una quincena; de ahí se cuentan pares de semanas. */
+export const QUINCENA_ANCHOR = '2026-10-26';
+const dayNum = (iso: string) => { const [y, m, d] = String(iso).split('-').map(Number); return Math.floor(Date.UTC(y, (m || 1) - 1, d || 1) / 86400000); };
+/** Día de la semana de una fecha AAAA-MM-DD: 0 = lunes … 6 = domingo. */
+export function weekdayIndex(iso: string): number { return (new Date(dayNum(iso) * 86400000).getUTCDay() + 6) % 7; }
+/** 1 = primera semana de la quincena, 2 = segunda. */
+export function quincenaWeek(iso: string): 1 | 2 {
+  const monday = dayNum(iso) - weekdayIndex(iso);
+  const k = Math.floor((monday - dayNum(QUINCENA_ANCHOR)) / 7);
+  return ((k % 2) + 2) % 2 === 0 ? 1 : 2;
+}
+/** Jueves o viernes de la segunda semana: toca planear la quincena que sigue. */
+export function planningDue(iso: string): boolean { const d = weekdayIndex(iso); return quincenaWeek(iso) === 2 && (d === 3 || d === 4); }
+/** Del jueves al domingo de la segunda semana (para el aviso dentro de la app). */
+export function planningWindow(iso: string): boolean { return quincenaWeek(iso) === 2 && weekdayIndex(iso) >= 3; }
+
 /* ───────────── Quincena: la semana siguiente vive dentro del mismo registro ───────────── */
 
 export const NEXT_WEEK_KEY = '_next';

@@ -17,6 +17,7 @@ import { DemoBanner, Page } from '../components/UI';
 import { useApp } from '../context/AppContext';
 import DayClose from '../components/DayClose';
 import { money } from '../lib/utils';
+import { nextWeekDays, plannedMeals, planningWindow, todayLocal } from '../lib/shopping';
 
 const suggestions = [
   'Planea mi menú semanal',
@@ -50,6 +51,9 @@ export default function Dashboard() {
   return (
     <Page title="Buenos días" subtitle="Esto es lo más importante de tu cocina hoy.">
       {!configured && <DemoBanner />}
+      {planningWindow(todayLocal()) && plannedMeals(nextWeekDays(activeWeek?.days as any)).length < 7 && (
+        <Link to="/menu" className="ai-notice" role="status"><CalendarDays size={18} /><span>Toca planear la siguiente quincena: arma el menú y la lista del súper.</span><ChevronRight size={18} /></Link>
+      )}
 
       <section className="dashboard-hero compact-hero">
         <div className="hero-copy">

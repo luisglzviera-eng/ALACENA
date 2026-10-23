@@ -152,3 +152,8 @@ Cómo comprobarlo (2 minutos, ya publicado):
 ## v8.14.1
 - Despensa por foto: los nombres salen como en casa ("Banana" → "Plátano", "palta" → "Aguacate", etc.). Se corrige en el prompt y con un diccionario `mexicanName` aplicado a lo que devuelve la IA.
 - Demo: la semana de ejemplo empieza el lunes actual.
+
+## v8.15.0
+- Fechas del menú automáticas: si la semana guardada ya pasó, Alacena la pone sola en la semana de hoy (o pasa la siguiente ya planeada). Un aviso lo explica y se puede cerrar. Ya no sale julio.
+- Aviso de quincena: jueves (y viernes si sigue sin planear) de la segunda semana llega una notificación "Toca planear la siguiente quincena", y aparece una tarjeta en Inicio y en Menú. Quincena que arranca el lunes 26 de octubre de 2026, cada 2 semanas.
+- Menú con IA más completo: comida y cena con proteína y acompañamiento (ej. "Arroz a la mexicana con huevo estrellado y frijoles"), desayuno con proteína y fruta.
